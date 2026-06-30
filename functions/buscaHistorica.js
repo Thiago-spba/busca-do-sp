@@ -71,6 +71,8 @@ async function buscarAcervoHistorico(termo, fromDateISO, toDateISO) {
     const totalEncontrado = matchTotal ? parseInt(matchTotal[1].replace(/\./g, ""), 10) : 0;
 
     const linksPorHref = new Map();
+
+    // Estratégia 1: seletores novos (caso o site tenha sido atualizado)
     $(".resultadoBuscaItem").each((_, el) => {
       const linkHeader = $(el).find(".card-header a").first();
       const href = linkHeader.attr("href");
@@ -79,6 +81,20 @@ async function buscarAcervoHistorico(termo, fromDateISO, toDateISO) {
       if (!href) return;
       linksPorHref.set(href, { titulo, trecho });
     });
+
+    // Estratégia 2 (fallback): seletores originais comprovados
+    if (linksPorHref.size === 0) {
+      $("a[href*='BuscaDO2001Documento_11_4.aspx']").each((_, el) => {
+        const href = $(el).attr("href");
+        const texto = $(el).text().trim();
+        if (!href) return;
+        if (!linksPorHref.has(href)) {
+          linksPorHref.set(href, { titulo: texto, trecho: "" });
+        } else {
+          linksPorHref.get(href).trecho = texto;
+        }
+      });
+    }
 
     const itens = Array.from(linksPorHref.entries()).map(([href, dados], i) => ({
       id: "historico-" + i + "-" + Date.now(),

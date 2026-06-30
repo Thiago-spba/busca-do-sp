@@ -41,13 +41,30 @@ export function useSearch() {
     /**
      * Filtra os itens em duas etapas:
      * 1. Primeiro garante que o item menciona o NOME da pessoa
+     *    - Para o Banco Atual: exige nome completo (dados estruturados)
+     *    - Para o Arquivo Histórico: aceita se pelo menos 2 palavras significativas do nome
+     *      aparecem juntas, pois o DO antigo frequentemente abrevia
      * 2. Se o usuário selecionou assuntos, verifica se o item menciona pelo menos um deles
      */
+    const palavrasSignificativas = (nome) => {
+      const ignorar = ["de", "da", "do", "dos", "das", "e"];
+      return nome.split(/\s+/).filter(p => p.length > 2 && !ignorar.includes(p.toLowerCase()));
+    };
+
     const filtrarItens = (itens) => {
-      // Etapa 1: Garantir que é sobre a pessoa certa
+      const palavras = palavrasSignificativas(nomePrincipal);
+
       let filtrados = itens.filter(item => {
-        const textoCompleto = (item.titulo || "") + " " + (item.trecho || "") + " " + (item.hierarquia || "");
-        return contemTermo(textoCompleto, nomePrincipal);
+        const textoCompleto = removerAcentos((item.titulo || "") + " " + (item.trecho || "") + " " + (item.hierarquia || "")).toLowerCase();
+
+        if (item.fonte === "atual") {
+          // Banco Atual: exige nome completo
+          return contemTermo(textoCompleto, nomePrincipal);
+        } else {
+          // Arquivo Histórico: aceita se pelo menos 2 palavras significativas aparecem
+          const matches = palavras.filter(p => textoCompleto.includes(removerAcentos(p).toLowerCase()));
+          return matches.length >= 2;
+        }
       });
 
       // Etapa 2: Se há filtros de assunto, aplicar
