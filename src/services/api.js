@@ -1,9 +1,9 @@
-const BASE_URL = "http://127.0.0.1:5002/busca-do-sp/southamerica-east1";
+const BASE_URL = "https://southamerica-east1-busca-do-sp.cloudfunctions.net";
 
 export async function buscarAtualAPI(termoPrincipal, fromDate, toDate) {
   try {
     const params = new URLSearchParams({
-      termos: termoPrincipal, // Envia apenas o nome para evitar que a API traga lixo
+      termos: termoPrincipal,
       fromDate,
       toDate,
     });

@@ -17,7 +17,7 @@
     "axios": "^1.18.1",
     "axios-cookiejar-support": "^7.0.0",
     "cheerio": "^1.2.0",
-    "firebase-admin": "^13.6.0",
+    "firebase-admin": "^13.10.0",
     "firebase-functions": "^7.0.0",
     "tough-cookie": "^6.0.1"
   },

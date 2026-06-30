@@ -32,15 +32,12 @@ export function ResultCard({ item, termosBusca = [] }) {
       : `https://www.doe.sp.gov.br/${item.slug.replace(/^\//, '')}`
     : null;
 
-  // Monta Text Fragments com múltiplas ocorrências
-  // Repete o &text= várias vezes para o Chrome destacar várias aparições do nome
+  // Monta Text Fragment (recurso nativo do navegador) com o nome buscado
   const nomePrincipal = termosBusca.length > 0 ? termosBusca[0] : "";
   let linkOriginal = urlBase;
   if (urlBase && nomePrincipal) {
     const nomeEncoded = encodeURIComponent(nomePrincipal);
-    // Até 10 ocorrências destacadas na página oficial
-    const fragmentos = Array(10).fill(`text=${nomeEncoded}`).join('&');
-    linkOriginal = `${urlBase}#:~:${fragmentos}`;
+    linkOriginal = `${urlBase}#:~:text=${nomeEncoded}`;
   }
 
   const trechoCompleto = item.trecho || "Trecho não disponível";
@@ -119,3 +116,4 @@ export function ResultCard({ item, termosBusca = [] }) {
     </div>
   );
 }
+

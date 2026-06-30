@@ -2,10 +2,6 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { buscarAcervoAtual } = require("./buscaAtual");
 const { buscarAcervoHistorico } = require("./buscaHistorica");
 
-/**
- * Endpoint HTTP: busca no acervo ATUAL (rapido, JSON).
- * Parametros esperados (query string): termos (separados por virgula), fromDate, toDate, pageNumber, pageSize
- */
 exports.buscaAtual = onRequest({ region: "southamerica-east1", cors: true }, async (req, res) => {
   try {
     const { termos, fromDate, toDate, pageNumber, pageSize } = req.query;
@@ -31,10 +27,6 @@ exports.buscaAtual = onRequest({ region: "southamerica-east1", cors: true }, asy
   }
 });
 
-/**
- * Endpoint HTTP: busca no acervo HISTORICO (mais lento, HTML parseado).
- * Parametros esperados (query string): termo (apenas 1), fromDate, toDate (formato YYYY-MM-DD)
- */
 exports.buscaHistorica = onRequest({ region: "southamerica-east1", cors: true }, async (req, res) => {
   try {
     const { termo, fromDate, toDate } = req.query;
@@ -51,3 +43,7 @@ exports.buscaHistorica = onRequest({ region: "southamerica-east1", cors: true },
     res.status(500).json({ erro: "Erro interno ao buscar acervo historico" });
   }
 });
+
+// Funcao de controle de acesso (login Google + limite de 5 usuarios)
+const { verificarAcesso } = require("./acesso");
+exports.verificarAcesso = verificarAcesso;
