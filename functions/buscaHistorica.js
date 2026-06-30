@@ -18,9 +18,14 @@ async function buscarAcervoHistorico(termo, fromDateISO, toDateISO) {
     const client = wrapper(axios.create({
       jar,
       withCredentials: true,
-      timeout: 20000,
+      timeout: 25000,
       maxRedirects: 5,
-      headers: { "User-Agent": "Mozilla/5.0 Chrome/120" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9",
+        "Origin": BASE,
+      },
     }));
 
     const paginaForm = await client.get(URL_FORMULARIO);
@@ -35,12 +40,21 @@ async function buscarAcervoHistorico(termo, fromDateISO, toDateISO) {
     corpo.append("__VIEWSTATE", viewState);
     corpo.append("__VIEWSTATEGENERATOR", viewStateGen);
     corpo.append(PREFIXO + "txtPalavrasChave", termo);
-    corpo.append(PREFIXO + "chkGrupos$0", "on");
+
+    // CORRECAO: marcar TODOS os 13 checkboxes de cadernos (0 a 12), como o navegador faz
+    for (let i = 0; i <= 12; i++) {
+      corpo.append(PREFIXO + "chkGrupos$" + i, "on");
+    }
+
     corpo.append(PREFIXO + "txtDataInicio", formatarDataBR(fromDateISO));
     corpo.append(PREFIXO + "txtDataFim", formatarDataBR(toDateISO));
+
+    // Campos extras da sidebar (presentes no form real)
+    corpo.append("ctl00$ctl00$ctl00$content$ColunaContent$Coluna_dir_Tipo_C_nao_logado_DI_2_0$Inc_dir_servicos_grat$Inc_box_srv_gratuitos$txtData", new Date().toLocaleDateString("pt-BR"));
+    corpo.append("ctl00$ctl00$ctl00$content$ColunaContent$Coluna_dir_Tipo_C_nao_logado_DI_2_0$Inc_dir_valide_ticket$txtTicket", "");
+
     corpo.append(PREFIXO + "btnBuscar", "Buscar");
 
-    // Deixa o axios seguir os redirects automaticamente, mantendo o cookie em cada salto
     const paginaFinal = await client.post(URL_FORMULARIO, corpo.toString(), {
       headers: { "Content-Type": "application/x-www-form-urlencoded", "Referer": URL_FORMULARIO },
       maxRedirects: 5,
@@ -82,3 +96,4 @@ async function buscarAcervoHistorico(termo, fromDateISO, toDateISO) {
 }
 
 module.exports = { buscarAcervoHistorico };
+
