@@ -119,6 +119,9 @@ function extrairTrechoCentralizado(texto, termos, tamanho = 160) {
 }
 
 export function ResultCard({ item, termosBusca = [] }) {
+  // Card fechado por padrao (so titulo + data): com muitos resultados, abrir
+  // tudo de uma vez deixa a pagina enorme - o usuario abre so o que interessa.
+  const [aberto, setAberto] = useState(false);
   const [expandido, setExpandido] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [explicacao, setExplicacao] = useState(null);
@@ -186,75 +189,86 @@ export function ResultCard({ item, termosBusca = [] }) {
 
   return (
     <div className="result-card" data-color={item.color || "neutro"}>
-      <div className="card-header">
+      <button
+        onClick={() => setAberto(!aberto)}
+        className="card-header"
+        style={{ background: "none", border: "none", padding: 0, width: "100%", textAlign: "left", font: "inherit", cursor: "pointer", marginBottom: aberto ? "0.75rem" : 0 }}
+      >
         <span className="card-title">{destacarTexto(item.titulo || "Publicação Oficial", termosBusca)}</span>
-        <span className="card-date">{dataFormatada}</span>
-      </div>
+        <span className="card-date" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+          {dataFormatada}
+          {aberto ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </span>
+      </button>
 
       {prazoDetectado && (
-        <div style={{ background: "var(--chip-orange)", color: "var(--chip-orange-text)", borderRadius: "6px", padding: "0.3rem 0.6rem", fontSize: "0.78rem", fontWeight: 600, marginBottom: "0.6rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+        <div style={{ background: "var(--chip-orange)", color: "var(--chip-orange-text)", borderRadius: "6px", padding: "0.3rem 0.6rem", fontSize: "0.78rem", fontWeight: 600, marginBottom: aberto ? "0.6rem" : 0, display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
           ⏰ {prazoDetectado}
         </div>
       )}
 
-      <div className="card-excerpt" style={{ whiteSpace: "pre-wrap" }}>
-        {expandido ? destacarTexto(trechoCompleto, termosBusca) : destacarTexto(trechoCurto, termosBusca)}
-      </div>
+      {aberto && (
+        <>
+          <div className="card-excerpt" style={{ whiteSpace: "pre-wrap" }}>
+            {expandido ? destacarTexto(trechoCompleto, termosBusca) : destacarTexto(trechoCurto, termosBusca)}
+          </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "1.1rem", flexWrap: "wrap" }}>
-        {!explicacao && (
-          <button onClick={handleExplicar} disabled={carregandoExplicacao} className="btn-explicar-ia" style={{ marginBottom: 0 }}>
-            <Lightbulb size={20} className="icone-lampada-ia" />
-            {carregandoExplicacao ? "Gerando explicação..." : "Explicar em linguagem simples"}
-          </button>
-        )}
-        <button
-          onClick={handleCompartilhar}
-          disabled={compartilhando || carregandoExplicacao}
-          style={{ background: "none", border: "none", color: "#25D366", cursor: compartilhando ? "default" : "pointer", fontSize: "0.85rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.25rem 0", opacity: compartilhando ? 0.7 : 1 }}
-        >
-          <Share2 size={16} /> {compartilhando ? "Preparando..." : "Compartilhar no WhatsApp"}
-        </button>
-      </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "1.1rem", flexWrap: "wrap" }}>
+            {!explicacao && (
+              <button onClick={handleExplicar} disabled={carregandoExplicacao} className="btn-explicar-ia" style={{ marginBottom: 0 }}>
+                <Lightbulb size={20} className="icone-lampada-ia" />
+                {carregandoExplicacao ? "Gerando explicação..." : "Explicar em linguagem simples"}
+              </button>
+            )}
+            <button
+              onClick={handleCompartilhar}
+              disabled={compartilhando || carregandoExplicacao}
+              style={{ background: "none", border: "none", color: "#25D366", cursor: compartilhando ? "default" : "pointer", fontSize: "0.85rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.25rem 0", opacity: compartilhando ? 0.7 : 1 }}
+            >
+              <Share2 size={16} /> {compartilhando ? "Preparando..." : "Compartilhar no WhatsApp"}
+            </button>
+          </div>
 
-      {explicacao && (
-        <div style={{ background: "var(--chip-blue)", color: "var(--chip-blue-text)", borderRadius: "8px", padding: "0.75rem 0.9rem", fontSize: "0.85rem", lineHeight: "1.5", marginTop: "0.6rem", marginBottom: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
-          <Lightbulb size={18} className="icone-lampada-ia" style={{ flexShrink: 0, marginTop: "0.1rem" }} />
-          <span>{explicacao}</span>
-        </div>
+          {explicacao && (
+            <div style={{ background: "var(--chip-blue)", color: "var(--chip-blue-text)", borderRadius: "8px", padding: "0.75rem 0.9rem", fontSize: "0.85rem", lineHeight: "1.5", marginTop: "0.6rem", marginBottom: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+              <Lightbulb size={18} className="icone-lampada-ia" style={{ flexShrink: 0, marginTop: "0.1rem" }} />
+              <span>{explicacao}</span>
+            </div>
+          )}
+
+          {erroExplicacao && (
+            <div style={{ color: "var(--chip-red-text)", fontSize: "0.8rem", marginTop: "0.5rem", marginBottom: "0.75rem" }}>{erroExplicacao}</div>
+          )}
+
+          {temMaisDetalhes && (
+            <button onClick={() => setExpandido(!expandido)} style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0", marginBottom: "0.75rem", fontWeight: "500" }}>
+              {expandido ? (<><ChevronUp size={14} /> Ver menos</>) : (<><ChevronDown size={14} /> Ver mais detalhes</>)}
+            </button>
+          )}
+
+          {expandido && item.hierarquia && (
+            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.75rem", lineHeight: "1.4", fontStyle: "italic" }}>
+              📂 {item.hierarquia}
+            </div>
+          )}
+
+          {expandido && isHistorico && nomePrincipal && (
+            <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", background: "var(--bg-card)", border: "1px dashed var(--border-color)", borderRadius: "8px", padding: "0.5rem 0.7rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
+              <span>📄 Este link abre um PDF. O destaque automático não funciona em PDFs — copie o nome e use <strong>Ctrl+F</strong> dentro do arquivo para localizá-lo rápido.</span>
+              <button onClick={copiarNome} style={{ background: copiado ? "var(--primary)" : "transparent", color: copiado ? "#fff" : "var(--primary)", border: "1px solid var(--primary)", borderRadius: "6px", padding: "0.25rem 0.6rem", cursor: "pointer", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.3rem", whiteSpace: "nowrap" }}>
+                {copiado ? (<><Check size={13} /> Copiado!</>) : (<><Copy size={13} /> Copiar nome</>)}
+              </button>
+            </div>
+          )}
+
+          <div className="card-footer">
+            <span className={"badge-fonte " + (isHistorico ? "historico" : "")}>
+              {isHistorico ? "📜 Arquivo Histórico" : "📄 Diário Oficial Atual"}
+            </span>
+            {linkOriginal && (<a href={linkOriginal} target="_blank" rel="noopener noreferrer" className="link-original">Conferir no site oficial <ExternalLink size={14} /></a>)}
+          </div>
+        </>
       )}
-
-      {erroExplicacao && (
-        <div style={{ color: "var(--chip-red-text)", fontSize: "0.8rem", marginTop: "0.5rem", marginBottom: "0.75rem" }}>{erroExplicacao}</div>
-      )}
-
-      {temMaisDetalhes && (
-        <button onClick={() => setExpandido(!expandido)} style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0", marginBottom: "0.75rem", fontWeight: "500" }}>
-          {expandido ? (<><ChevronUp size={14} /> Ver menos</>) : (<><ChevronDown size={14} /> Ver mais detalhes</>)}
-        </button>
-      )}
-
-      {expandido && item.hierarquia && (
-        <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.75rem", lineHeight: "1.4", fontStyle: "italic" }}>
-          📂 {item.hierarquia}
-        </div>
-      )}
-
-      {expandido && isHistorico && nomePrincipal && (
-        <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", background: "var(--bg-card)", border: "1px dashed var(--border-color)", borderRadius: "8px", padding: "0.5rem 0.7rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
-          <span>📄 Este link abre um PDF. O destaque automático não funciona em PDFs — copie o nome e use <strong>Ctrl+F</strong> dentro do arquivo para localizá-lo rápido.</span>
-          <button onClick={copiarNome} style={{ background: copiado ? "var(--primary)" : "transparent", color: copiado ? "#fff" : "var(--primary)", border: "1px solid var(--primary)", borderRadius: "6px", padding: "0.25rem 0.6rem", cursor: "pointer", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.3rem", whiteSpace: "nowrap" }}>
-            {copiado ? (<><Check size={13} /> Copiado!</>) : (<><Copy size={13} /> Copiar nome</>)}
-          </button>
-        </div>
-      )}
-
-      <div className="card-footer">
-        <span className={"badge-fonte " + (isHistorico ? "historico" : "")}>
-          {isHistorico ? "📜 Arquivo Histórico" : "📄 Diário Oficial Atual"}
-        </span>
-        {linkOriginal && (<a href={linkOriginal} target="_blank" rel="noopener noreferrer" className="link-original">Conferir no site oficial <ExternalLink size={14} /></a>)}
-      </div>
     </div>
   );
 }
