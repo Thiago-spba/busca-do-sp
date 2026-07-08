@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
+import { Moon, Sun } from "lucide-react";
 import { auth, functions } from "../firebase/config";
 import { ContaBloqueada } from "../components/ContaBloqueada";
+import { useTema } from "../hooks/useTema";
 
 export function Login() {
   const navigate = useNavigate();
+  const [isDark, setIsDark] = useTema();
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(null);
   const [bloqueado, setBloqueado] = useState(false);
@@ -55,10 +58,20 @@ export function Login() {
         alignItems: "center",
         justifyContent: "center",
         minHeight: "100vh",
-        background: "#FAF3E8",
+        background: "var(--login-bg)",
         padding: "1.5rem",
+        position: "relative",
       }}
     >
+      <button
+        className="theme-toggle"
+        onClick={() => setIsDark(!isDark)}
+        style={{ position: "absolute", top: "1.25rem", right: "1.25rem" }}
+      >
+        {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        {isDark ? "Modo Claro" : "Modo Escuro"}
+      </button>
+
       <div className="school-banner" style={{ maxWidth: "420px", width: "100%" }}>
         <div className="school-name">E.E. Prof. Simão Mathias</div>
         <div className="school-address">
@@ -71,7 +84,7 @@ export function Login() {
           maxWidth: "420px",
           width: "100%",
           textAlign: "center",
-          background: "#FFFDF8",
+          background: "var(--login-card-bg)",
           borderRadius: "16px",
           padding: "2.5rem 2rem",
           border: "1px solid rgba(59, 130, 246, 0.35)",
@@ -94,8 +107,8 @@ export function Login() {
           }}
         />
 
-        <h2 style={{ color: "#1e293b", marginBottom: "0.5rem" }}>Busca DO-SP</h2>
-        <p style={{ color: "#64748b", marginBottom: "2rem", fontSize: "0.95rem" }}>
+        <h2 style={{ color: "var(--text-main)", marginBottom: "0.5rem" }}>Busca DO-SP</h2>
+        <p style={{ color: "var(--text-muted)", marginBottom: "2rem", fontSize: "0.95rem" }}>
           Acesso restrito. Entre com sua conta Google autorizada.
         </p>
 

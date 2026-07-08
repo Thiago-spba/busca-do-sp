@@ -8,10 +8,11 @@ import { MinhasListas } from "../components/MinhasListas";
 import { ContaBloqueada } from "../components/ContaBloqueada";
 import { useSearch } from "../hooks/useSearch";
 import { useHistoricoBuscas } from "../hooks/useHistoricoBuscas";
+import { useTema } from "../hooks/useTema";
 import { auth, functions } from "../firebase/config";
 import { fraseDoDia } from "../config/frasesMotivacionais";
 import { ADMIN_EMAIL } from "../config/admin";
-import { Database, Archive, AlertCircle, Moon, Sun, Info, Mail, SearchX, Shield } from "lucide-react";
+import { Database, Archive, AlertCircle, Moon, Sun, Info, Mail, SearchX, Shield, LogOut } from "lucide-react";
 
 // Determina o periodo do dia (manha 5h-11h59, tarde 12h-17h59, noite 18h-4h59),
 // usado tanto para a saudacao quanto para escolher o tom da frase do dia.
@@ -41,9 +42,7 @@ export function Home() {
   const primeiroNome = (auth.currentUser?.displayName || "").split(" ")[0];
   const frase = fraseDoDia(periodo);
 
-  const [isDark, setIsDark] = useState(() => {
-    return localStorage.getItem("busca-dosp-theme") === "dark";
-  });
+  const [isDark, setIsDark] = useTema();
   const [termosBuscados, setTermosBuscados] = useState([]);
   const [atualizandoHistoricoId, setAtualizandoHistoricoId] = useState(null);
   const [progressoLote, setProgressoLote] = useState(null);
@@ -56,16 +55,6 @@ export function Home() {
     setLimiteAtualResultados(TAMANHO_PAGINA_RESULTADOS);
     setLimiteHistoricoResultados(TAMANHO_PAGINA_RESULTADOS);
   };
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.setAttribute("data-theme", "dark");
-      localStorage.setItem("busca-dosp-theme", "dark");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-      localStorage.setItem("busca-dosp-theme", "light");
-    }
-  }, [isDark]);
 
   // Confere se a conta foi bloqueada pelo admin durante uma sessao ja aberta
   // (o login em si ja recusa contas bloqueadas, mas quem ja estava logado
@@ -172,7 +161,7 @@ export function Home() {
         <div className="school-address">Av. Ragueb Chohfi, 4757 — Jardim Três Marias, São Paulo - SP, 08380-330</div>
       </div>
 
-      <div className="header-top" style={{ gap: "0.75rem" }}>
+      <div className="header-top" style={{ gap: "0.75rem", flexWrap: "wrap" }}>
         {auth.currentUser?.email === ADMIN_EMAIL && (
           <a href="/admin" className="theme-toggle" style={{ textDecoration: "none" }}>
             <Shield size={18} />
@@ -182,6 +171,10 @@ export function Home() {
         <button className="theme-toggle" onClick={() => setIsDark(!isDark)}>
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
           {isDark ? "Modo Claro" : "Modo Escuro"}
+        </button>
+        <button className="theme-toggle" onClick={() => signOut(auth)}>
+          <LogOut size={18} />
+          Sair
         </button>
       </div>
 

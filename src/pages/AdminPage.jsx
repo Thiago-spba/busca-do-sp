@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Moon, Sun } from "lucide-react";
 import { auth } from "../firebase/config";
+import { useTema } from "../hooks/useTema";
 import {
   listarUsuariosAPI,
   bloquearUsuarioAPI,
@@ -20,6 +21,7 @@ function formatarData(valor, apenasData = false) {
 }
 
 export function AdminPage() {
+  const [isDark, setIsDark] = useTema();
   const [limite, setLimite] = useState(null);
   const [novoLimite, setNovoLimite] = useState("");
   const [salvandoLimite, setSalvandoLimite] = useState(false);
@@ -102,6 +104,13 @@ export function AdminPage() {
 
   return (
     <div className="container">
+      <div className="header-top" style={{ gap: "0.75rem", flexWrap: "wrap" }}>
+        <button className="theme-toggle" onClick={() => setIsDark(!isDark)}>
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          {isDark ? "Modo Claro" : "Modo Escuro"}
+        </button>
+      </div>
+
       <div className="header">
         <h1>Painel do Administrador</h1>
         <p>Gerencie quem pode acessar o Busca DO-SP</p>

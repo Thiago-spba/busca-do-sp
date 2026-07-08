@@ -14,7 +14,7 @@ export function ContaBloqueada() {
         alignItems: "center",
         justifyContent: "center",
         minHeight: "100vh",
-        background: "#FAF3E8",
+        background: "var(--login-bg)",
         padding: "1.5rem",
       }}
     >
@@ -30,7 +30,7 @@ export function ContaBloqueada() {
           maxWidth: "420px",
           width: "100%",
           textAlign: "center",
-          background: "#FFFDF8",
+          background: "var(--login-card-bg)",
           borderRadius: "16px",
           padding: "2.5rem 2rem",
           border: "1px solid rgba(220, 38, 38, 0.25)",
@@ -38,8 +38,8 @@ export function ContaBloqueada() {
         }}
       >
         <div style={{ fontSize: "2.75rem", marginBottom: "0.75rem" }}>🔑⚙️</div>
-        <h2 style={{ color: "#1e293b", marginBottom: "0.5rem" }}>Acesso em manutenção</h2>
-        <p style={{ color: "#64748b", fontSize: "0.95rem", lineHeight: 1.6 }}>
+        <h2 style={{ color: "var(--text-main)", marginBottom: "0.5rem" }}>Acesso em manutenção</h2>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", lineHeight: 1.6 }}>
           Sua conta está temporariamente bloqueada pelo administrador.
           Entre em contato com a coordenação da escola se acha que isso é um engano.
         </p>

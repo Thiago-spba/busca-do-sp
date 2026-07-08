@@ -20,6 +20,10 @@
   --chip-purple-text: #7e22ce;
   --chip-gray: #f1f5f9;
   --chip-gray-text: #475569;
+
+  /* Tela de login/manutencao (tom quente, so essas duas telas usam) */
+  --login-bg: #FAF3E8;
+  --login-card-bg: #FFFDF8;
 }
 
 [data-theme="dark"] {
@@ -46,6 +50,9 @@
   --chip-purple-text: #d8b4fe;
   --chip-gray: rgba(100, 116, 139, 0.15);
   --chip-gray-text: #cbd5e1;
+
+  --login-bg: #0f172a;
+  --login-card-bg: #1e293b;
 }
 
 body {
