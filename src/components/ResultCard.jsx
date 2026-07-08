@@ -159,7 +159,9 @@ export function ResultCard({ item, termosBusca = [] }) {
       if (!resultado?.sucesso) return;
       textoResumo = resultado.texto;
     }
-    const partes = [textoResumo];
+    const partes = [];
+    if (nomePrincipal) partes.push(`Sobre: ${nomePrincipal}`);
+    partes.push(textoResumo);
     if (linkOriginal) partes.push(linkOriginal);
     window.open(`https://wa.me/?text=${encodeURIComponent(partes.join("\n\n"))}`, "_blank", "noopener,noreferrer");
   };
