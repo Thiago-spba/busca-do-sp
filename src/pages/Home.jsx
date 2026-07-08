@@ -72,6 +72,10 @@ export function Home() {
   // assim que uma nova comeca. Rodar duas ao mesmo tempo quebraria essa segunda.
   const handleAtualizarHistorico = async (entrada) => {
     setAtualizandoHistoricoId(entrada.id);
+    // Registra o nome da pessoa desta atualizacao: e ele que alimenta o destaque
+    // verde nos resultados, o link "#:~:text=" que abre o documento direto no nome
+    // (Banco Atual) e o aviso "Copiar nome" dos PDFs do Arquivo Historico.
+    setTermosBuscados(entrada.termos || []);
     try {
       return await historico.atualizarBusca(entrada, buscar);
     } finally {
@@ -144,27 +148,6 @@ export function Home() {
       </div>
 
       <SearchBar onSearch={handleSearch} loading={operacaoEmAndamento} />
-
-      <HistoricoBuscas
-        historico={historico}
-        onAtualizar={handleAtualizarHistorico}
-        onExcluir={handleExcluirHistorico}
-        atualizandoId={atualizandoHistoricoId}
-        bloqueado={operacaoEmAndamento}
-      />
-
-      <MinhasListas
-        nomesListas={historico.nomesListas}
-        itensListas={historico.itensListas}
-        buscas={historico.buscas}
-        listaPadrao={historico.listaPadrao}
-        onAtualizarLote={handleAtualizarLote}
-        onDefinirMembro={historico.definirMembroLista}
-        onCriarLista={historico.criarLista}
-        onExcluirLista={historico.excluirLista}
-        progressoLote={progressoLote}
-        bloqueado={operacaoEmAndamento}
-      />
 
       {/* Erros */}
       {erros.length > 0 && (
@@ -304,6 +287,29 @@ export function Home() {
            Faça uma busca para ver os resultados divididos por fonte.
          </p>
       )}
+
+      {/* Acompanhamento: listas de favoritos e historico de buscas, abaixo dos
+          resultados para que a area logo apos a busca seja sempre dos documentos */}
+      <MinhasListas
+        nomesListas={historico.nomesListas}
+        itensListas={historico.itensListas}
+        buscas={historico.buscas}
+        listaPadrao={historico.listaPadrao}
+        onAtualizarLote={handleAtualizarLote}
+        onDefinirMembro={historico.definirMembroLista}
+        onCriarLista={historico.criarLista}
+        onExcluirLista={historico.excluirLista}
+        progressoLote={progressoLote}
+        bloqueado={operacaoEmAndamento}
+      />
+
+      <HistoricoBuscas
+        historico={historico}
+        onAtualizar={handleAtualizarHistorico}
+        onExcluir={handleExcluirHistorico}
+        atualizandoId={atualizandoHistoricoId}
+        bloqueado={operacaoEmAndamento}
+      />
 
       {/* Rodapé */}
       <footer className="app-footer">
