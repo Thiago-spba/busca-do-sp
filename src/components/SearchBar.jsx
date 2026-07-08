@@ -127,7 +127,7 @@ export function SearchBar({ onSearch, loading }) {
           <input
             type="text"
             className="input-field"
-            placeholder="Quer pesquisar outra coisa? Digite uma palavra-chave extra aqui..."
+            placeholder="Digite uma palavra-chave extra aqui..."
             value={assuntoExtra}
             onChange={(e) => setAssuntoExtra(e.target.value)}
           />
