@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { SearchBar } from "../components/SearchBar";
 import { ResultCard } from "../components/ResultCard";
 import { HistoricoBuscas } from "../components/HistoricoBuscas";
+import { MinhasListas } from "../components/MinhasListas";
 import { useSearch } from "../hooks/useSearch";
 import { useHistoricoBuscas } from "../hooks/useHistoricoBuscas";
 import { auth } from "../firebase/config";
@@ -148,8 +149,20 @@ export function Home() {
         historico={historico}
         onAtualizar={handleAtualizarHistorico}
         onExcluir={handleExcluirHistorico}
-        onAtualizarLote={handleAtualizarLote}
+        onAtribuirLista={historico.atribuirLista}
+        onCriarLista={historico.criarLista}
+        nomesListas={historico.nomesListas}
         atualizandoId={atualizandoHistoricoId}
+        bloqueado={operacaoEmAndamento}
+      />
+
+      <MinhasListas
+        nomesListas={historico.nomesListas}
+        itensListas={historico.itensListas}
+        onAtualizarLote={handleAtualizarLote}
+        onRemoverDaLista={(id) => historico.atribuirLista(id, null)}
+        onCriarLista={historico.criarLista}
+        onExcluirLista={historico.excluirLista}
         progressoLote={progressoLote}
         bloqueado={operacaoEmAndamento}
       />
