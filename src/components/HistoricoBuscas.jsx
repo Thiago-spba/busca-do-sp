@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { History, RefreshCw, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { ListaDocumentos } from "./ListaDocumentos";
 
 function formatarData(iso) {
   if (!iso) return "-";
@@ -123,6 +124,11 @@ export function HistoricoBuscas({ historico, onAtualizar, onExcluir, onVerResult
                           {" · "}Histórico: {entrada.diagnostico.historico.totalFonte} na fonte → {entrada.diagnostico.historico.totalFiltrado} no filtro
                         </div>
                       )}
+                      <ListaDocumentos
+                        itensAtual={entrada.itensAtual}
+                        itensHistorico={entrada.itensHistorico}
+                        nomePrincipal={entrada.nomePrincipal}
+                      />
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
                       <div style={{ fontWeight: "600", color: "var(--primary)", fontSize: "1.15rem", lineHeight: 1 }}>

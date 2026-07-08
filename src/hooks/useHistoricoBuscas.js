@@ -127,7 +127,7 @@ export function useHistoricoBuscas() {
     carregarListas();
   }, [carregarComLimite, carregarListas]);
 
-  const salvarBusca = useCallback(async ({ termos, fromDate, toDate, totalAtual, totalHistorico, idsAtual, idsHistorico, diagnostico }) => {
+  const salvarBusca = useCallback(async ({ termos, fromDate, toDate, totalAtual, totalHistorico, idsAtual, idsHistorico, itensAtual, itensHistorico, diagnostico }) => {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
     try {
@@ -141,6 +141,8 @@ export function useHistoricoBuscas() {
         totalHistorico,
         idsAtual,
         idsHistorico,
+        itensAtual: itensAtual || [],
+        itensHistorico: itensHistorico || [],
         diagnostico: diagnostico || null,
         listas: [],
         criadoEm: serverTimestamp(),
@@ -176,6 +178,8 @@ export function useHistoricoBuscas() {
         totalHistorico: resultado.totalHistorico,
         idsAtual: resultado.idsAtual,
         idsHistorico: resultado.idsHistorico,
+        itensAtual: resultado.itensAtual || [],
+        itensHistorico: resultado.itensHistorico || [],
         diagnostico: resultado.diagnostico || null,
         atualizadoEm: serverTimestamp(),
       });

@@ -203,6 +203,18 @@ export function useSearch() {
 
     const idsAtual = [];
     const idsHistorico = [];
+    // Resumo leve de cada documento (sem o trecho completo, que pode ser grande),
+    // guardado no historico/favoritos para gerar o link "Conferir no site oficial"
+    // sem precisar buscar de novo toda vez que o card e aberto.
+    const resumoItem = (item) => ({
+      id: item.id,
+      titulo: item.titulo || "",
+      data: item.data || null,
+      slug: item.slug || null,
+      hierarquia: item.hierarquia || "",
+    });
+    const itensAtual = [];
+    const itensHistorico = [];
     // Contadores de diagnostico: quantos itens a fonte reporta ter no total,
     // quantos ela de fato nos devolveu, e quantos sobreviveram ao nosso filtro.
     // Ajudam a distinguir "a fonte nao achou nada" de "nosso filtro descartou".
@@ -216,7 +228,7 @@ export function useSearch() {
       setLoadingAtual(false);
       if (res.sucesso && res.itens) {
         const filtrados = filtrarItens(res.itens);
-        filtrados.forEach((item) => idsAtual.push(item.id));
+        filtrados.forEach((item) => { idsAtual.push(item.id); itensAtual.push(resumoItem(item)); });
         diagnostico.atual = {
           totalFonte: res.totalItems || res.itens.length,
           totalRecebido: res.itens.length,
@@ -237,7 +249,7 @@ export function useSearch() {
       setLoadingHistorico(false);
       if (res.sucesso && res.itens) {
         const filtrados = filtrarItens(res.itens);
-        filtrados.forEach((item) => idsHistorico.push(item.id));
+        filtrados.forEach((item) => { idsHistorico.push(item.id); itensHistorico.push(resumoItem(item)); });
         diagnostico.historico = {
           totalFonte: res.totalEncontrado || res.itens.length,
           totalRecebido: res.itens.length,
@@ -262,6 +274,8 @@ export function useSearch() {
     return {
       idsAtual,
       idsHistorico,
+      itensAtual,
+      itensHistorico,
       totalAtual: idsAtual.length,
       totalHistorico: idsHistorico.length,
       diagnostico,

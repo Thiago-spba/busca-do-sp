@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Star, FolderKanban, ChevronDown, ChevronUp, RefreshCw, Trash2, X, Plus, UserPlus, Eye } from "lucide-react";
+import { ListaDocumentos } from "./ListaDocumentos";
 
 function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarLote, onDefinirMembro, onExcluirLista, onVerResultados, atualizandoId, progressoLote, bloqueado }) {
   const [aberto, setAberto] = useState(false);
@@ -205,6 +206,11 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarL
                           {novidade.novosAtual} novo(s) no Banco Atual · {novidade.novosHistorico} novo(s) no Arquivo Histórico
                         </div>
                       )}
+                      <ListaDocumentos
+                        itensAtual={entrada.itensAtual}
+                        itensHistorico={entrada.itensHistorico}
+                        nomePrincipal={entrada.nomePrincipal}
+                      />
                     </div>
                     <button
                       onClick={() => handleVerResultados(entrada)}

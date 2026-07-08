@@ -69,6 +69,8 @@ export function Home() {
         totalHistorico: resultado.totalHistorico,
         idsAtual: resultado.idsAtual,
         idsHistorico: resultado.idsHistorico,
+        itensAtual: resultado.itensAtual,
+        itensHistorico: resultado.itensHistorico,
         diagnostico: resultado.diagnostico,
       });
     }

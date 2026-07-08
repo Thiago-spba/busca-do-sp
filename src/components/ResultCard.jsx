@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ExternalLink, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
+import { formatarDataDocumento, montarLinkOficial } from "../utils/linkOficial";
 
 // Classes de caracteres para casar letras COM ou SEM acento (busca "Jose"
 // destaca "José" e vice-versa)
@@ -67,23 +68,9 @@ export function ResultCard({ item, termosBusca = [] }) {
   const [copiado, setCopiado] = useState(false);
 
   const isHistorico = item.fonte === "historico";
-  // Sem campo de data, tenta extrair do titulo (Arquivo Historico costuma
-  // comecar com "DD/MM/AAAA - Suplemento - ...")
-  const dataDoTitulo = !item.data && (item.titulo || "").match(/^(\d{2}\/\d{2}\/\d{4})/);
-  const dataFormatada = item.data
-    ? new Date(item.data).toLocaleDateString("pt-BR")
-    : (dataDoTitulo ? dataDoTitulo[1] : "Data indisponível");
-
-  const urlBase = item.slug
-    ? (item.slug.startsWith("http") ? item.slug : "https://www.doe.sp.gov.br/" + item.slug.replace(/^\//, ""))
-    : null;
-
+  const dataFormatada = formatarDataDocumento(item);
   const nomePrincipal = termosBusca.length > 0 ? termosBusca[0] : "";
-  let linkOriginal = urlBase;
-  if (urlBase && nomePrincipal) {
-    const nomeEncoded = encodeURIComponent(nomePrincipal);
-    linkOriginal = urlBase + "#:~:text=" + nomeEncoded;
-  }
+  const linkOriginal = montarLinkOficial(item, nomePrincipal);
 
   const copiarNome = async () => {
     if (!nomePrincipal) return;
