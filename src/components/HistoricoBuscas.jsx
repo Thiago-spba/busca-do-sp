@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { History, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { History, RefreshCw, ChevronDown, ChevronUp, Eye } from "lucide-react";
 
 function formatarData(iso) {
   if (!iso) return "-";
@@ -34,7 +34,7 @@ function formatarTempoRelativo(timestamp) {
   return diffAnos === 1 ? "há 1 ano" : `há ${diffAnos} anos`;
 }
 
-export function HistoricoBuscas({ historico, onAtualizar, onExcluir, atualizandoId, bloqueado }) {
+export function HistoricoBuscas({ historico, onAtualizar, onExcluir, onVerResultados, atualizandoId, bloqueado }) {
   const [aberto, setAberto] = useState(false);
   const [novidades, setNovidades] = useState({}); // { [id]: {novosAtual, novosHistorico} }
   const [expandidoId, setExpandidoId] = useState(null);
@@ -45,6 +45,14 @@ export function HistoricoBuscas({ historico, onAtualizar, onExcluir, atualizando
   const handleAtualizar = async (entrada) => {
     const { novosAtual, novosHistorico } = await onAtualizar(entrada);
     setNovidades((prev) => ({ ...prev, [entrada.id]: { novosAtual, novosHistorico } }));
+  };
+
+  // Busca novamente (para trazer os documentos com o destaque atualizado) e
+  // rola a pagina ate a grade de resultados, ja com o nome desta pessoa em foco.
+  const handleVerResultados = async (entrada) => {
+    const { novosAtual, novosHistorico } = await onAtualizar(entrada);
+    setNovidades((prev) => ({ ...prev, [entrada.id]: { novosAtual, novosHistorico } }));
+    onVerResultados();
   };
 
   const handleConfirmarExclusao = async (entrada) => {
@@ -219,6 +227,27 @@ export function HistoricoBuscas({ historico, onAtualizar, onExcluir, atualizando
                           >
                             <RefreshCw size={12} className={atualizandoId === entrada.id ? "spin" : ""} />
                             {atualizandoId === entrada.id ? "Verificando..." : "Atualizar"}
+                          </button>
+                          <button
+                            onClick={() => handleVerResultados(entrada)}
+                            disabled={bloqueado}
+                            title={bloqueado ? "Aguarde a operação em andamento terminar" : "Ver os documentos desta pessoa, com o nome destacado"}
+                            style={{
+                              background: "none",
+                              border: "1px solid var(--border-color)",
+                              borderRadius: "6px",
+                              padding: "0.35rem 0.7rem",
+                              color: "var(--text-main)",
+                              fontSize: "0.78rem",
+                              cursor: bloqueado ? "default" : "pointer",
+                              opacity: bloqueado ? 0.5 : 1,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.35rem",
+                            }}
+                          >
+                            <Eye size={12} />
+                            Ver resultados
                           </button>
                           <button
                             onClick={() => setConfirmandoId(entrada.id)}

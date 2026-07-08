@@ -54,21 +54,37 @@ function contemPalavra(tokensTexto, palavraBusca) {
 }
 
 /**
- * Documentos antigos costumam ser listas densas de servidores no formato
- * "NOME, RG 12.345.678-9 - NOME SEGUINTE, RG ...". O token "rg" marca o fim
- * do registro de uma pessoa; usamos isso como limite RIGIDO de proximidade,
- * para a janela nunca "vazar" e pegar palavras do registro de outra pessoa,
- * mesmo quando o limite de palavras (janelaTokens) sozinho permitiria.
+ * Tokenizador para a checagem de PROXIMIDADE no Arquivo Historico.
+ * Alem das palavras, marca FRONTEIRAS ("#") onde ha numeros (RG, matricula,
+ * CPF, datas) ou reticencias (fragmentos distintos do documento). Nas listas
+ * densas de servidores ("NOME 00012345 NOME SEGUINTE 00067890..."), sao esses
+ * elementos que separam o registro de uma pessoa do da seguinte - e a janela
+ * de proximidade nunca deve atravessa-los, senao palavras de pessoas
+ * DIFERENTES se combinam e geram falso positivo.
  */
-function limiteInferiorRg(tokensTexto, indice) {
+function tokenizarComFronteiras(texto) {
+  return removerAcentos(texto)
+    .toLowerCase()
+    .replace(/\.{2,}|…/g, " 0 ")
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length > 0)
+    .map((t) => (/[0-9]/.test(t) ? "#" : t));
+}
+
+// "rg" escrito por extenso tambem marca o fim do registro de uma pessoa
+function ehFronteira(token) {
+  return token === "#" || token === "rg";
+}
+
+function limiteInferiorFronteira(tokensTexto, indice) {
   for (let p = indice - 1; p >= 0; p--) {
-    if (tokensTexto[p] === "rg") return p + 1;
+    if (ehFronteira(tokensTexto[p])) return p + 1;
   }
   return 0;
 }
-function limiteSuperiorRg(tokensTexto, indice) {
+function limiteSuperiorFronteira(tokensTexto, indice) {
   for (let p = indice + 1; p < tokensTexto.length; p++) {
-    if (tokensTexto[p] === "rg") return p;
+    if (ehFronteira(tokensTexto[p])) return p;
   }
   return tokensTexto.length;
 }
@@ -96,8 +112,8 @@ function nomeAparecePorProximidade(tokensTexto, palavras, minimoPalavras = 2, ja
   for (let i = 0; i < tokensTexto.length; i++) {
     if (!palavrasBatem(primeira, tokensTexto[i])) continue;
 
-    const inicio = Math.max(0, i - janelaTokens, limiteInferiorRg(tokensTexto, i));
-    const fim = Math.min(tokensTexto.length, i + janelaTokens + 1, limiteSuperiorRg(tokensTexto, i));
+    const inicio = Math.max(0, i - janelaTokens, limiteInferiorFronteira(tokensTexto, i));
+    const fim = Math.min(tokensTexto.length, i + janelaTokens + 1, limiteSuperiorFronteira(tokensTexto, i));
     const janela = tokensTexto.slice(inicio, fim);
 
     const encontradasNaJanela = outras.filter((p) => contemPalavra(janela, p));
@@ -159,19 +175,19 @@ export function useSearch() {
 
       let filtrados = itens.filter((item) => {
         const textoOriginal = (item.titulo || "") + " " + (item.trecho || "") + " " + (item.hierarquia || "");
-        const tokensTexto = tokenizar(textoOriginal);
 
         if (item.fonte === "atual") {
-          return nomeCompletoBate(tokensTexto, palavras);
+          return nomeCompletoBate(tokenizar(textoOriginal), palavras);
         } else {
           // Exige a primeira palavra do nome + quase todas as outras (so 1 pode faltar)
-          // numa janela ESTREITA de palavras. Documentos antigos sao frequentemente
-          // listas densas de RG com dezenas de nomes diferentes emendados sem separador
-          // claro; uma janela larga ou um limiar frouxo faz sobrenomes comuns de OUTRAS
-          // pessoas (Fernando, Alves, Santos...) caírem coincidentemente perto do nome
-          // buscado e gerar falso positivo.
+          // numa janela ESTREITA de palavras, sem nunca atravessar uma fronteira de
+          // registro (numeros de RG/matricula, reticencias ou "RG" por extenso) - ver
+          // tokenizarComFronteiras. Documentos antigos sao listas densas com dezenas
+          // de nomes diferentes emendados; sem as fronteiras, sobrenomes comuns de
+          // OUTRAS pessoas (Maria, Aparecida, Santos...) caem coincidentemente perto
+          // do nome buscado e geram falso positivo.
           const minimo = Math.max(2, palavras.length - 1);
-          return nomeAparecePorProximidade(tokensTexto, palavras, minimo, 8);
+          return nomeAparecePorProximidade(tokenizarComFronteiras(textoOriginal), palavras, minimo, 8);
         }
       });
 

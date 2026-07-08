@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Star, FolderKanban, ChevronDown, ChevronUp, RefreshCw, Trash2, X, Plus, UserPlus } from "lucide-react";
+import { Star, FolderKanban, ChevronDown, ChevronUp, RefreshCw, Trash2, X, Plus, UserPlus, Eye } from "lucide-react";
 
-function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizarLote, onDefinirMembro, onExcluirLista, progressoLote, bloqueado }) {
+function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarLote, onDefinirMembro, onExcluirLista, onVerResultados, atualizandoId, progressoLote, bloqueado }) {
   const [aberto, setAberto] = useState(false);
   const [pickerAberto, setPickerAberto] = useState(false);
   const [novidades, setNovidades] = useState({});
@@ -21,6 +21,14 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizarLote, onDefini
       total: resultados.length,
       comNovidades: resultados.filter((r) => r.novosAtual + r.novosHistorico > 0).length,
     });
+  };
+
+  // Busca novamente essa pessoa (traz os documentos com o destaque atualizado)
+  // e rola a pagina ate a grade de resultados.
+  const handleVerResultados = async (entrada) => {
+    const { novosAtual, novosHistorico } = await onAtualizar(entrada);
+    setNovidades((prev) => ({ ...prev, [entrada.id]: { novosAtual, novosHistorico } }));
+    onVerResultados();
   };
 
   return (
@@ -199,6 +207,26 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizarLote, onDefini
                       )}
                     </div>
                     <button
+                      onClick={() => handleVerResultados(entrada)}
+                      disabled={bloqueado}
+                      title={bloqueado ? "Aguarde a operação em andamento terminar" : "Ver os documentos desta pessoa, com o nome destacado"}
+                      style={{
+                        background: "none",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: "6px",
+                        padding: "0.3rem 0.5rem",
+                        color: "var(--text-main)",
+                        cursor: bloqueado ? "default" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                        fontSize: "0.72rem",
+                        opacity: bloqueado ? 0.5 : 1,
+                      }}
+                    >
+                      {atualizandoId === entrada.id ? <RefreshCw size={13} className="spin" /> : <Eye size={13} />}
+                    </button>
+                    <button
                       onClick={() => onDefinirMembro(entrada.id, nome, false)}
                       disabled={bloqueado}
                       title="Remover desta lista"
@@ -217,7 +245,7 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizarLote, onDefini
   );
 }
 
-export function MinhasListas({ nomesListas, itensListas, buscas, listaPadrao, onAtualizarLote, onDefinirMembro, onCriarLista, onExcluirLista, progressoLote, bloqueado }) {
+export function MinhasListas({ nomesListas, itensListas, buscas, listaPadrao, onAtualizar, onAtualizarLote, onDefinirMembro, onCriarLista, onExcluirLista, onVerResultados, atualizandoId, progressoLote, bloqueado }) {
   const [criandoAberto, setCriandoAberto] = useState(false);
   const [novoNome, setNovoNome] = useState("");
 
@@ -241,9 +269,12 @@ export function MinhasListas({ nomesListas, itensListas, buscas, listaPadrao, on
           ehPadrao={nome === listaPadrao}
           membros={itensListas.filter((b) => (b.listas || []).includes(nome))}
           buscas={buscas}
+          onAtualizar={onAtualizar}
           onAtualizarLote={onAtualizarLote}
           onDefinirMembro={onDefinirMembro}
           onExcluirLista={onExcluirLista}
+          onVerResultados={onVerResultados}
+          atualizandoId={atualizandoId}
           progressoLote={progressoLote}
           bloqueado={bloqueado}
         />

@@ -1,18 +1,65 @@
 import React, { useState } from "react";
 import { ExternalLink, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
 
+// Classes de caracteres para casar letras COM ou SEM acento (busca "Jose"
+// destaca "José" e vice-versa)
+const CLASSES_ACENTO = {
+  a: "[aáàâãä]", e: "[eéèêë]", i: "[iíìîï]", o: "[oóòôõö]", u: "[uúùûü]", c: "[cç]", n: "[nñ]",
+};
+const PREPOSICOES_NOME = ["de", "da", "do", "dos", "das", "e"];
+
+function semAcento(str) {
+  return str.normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function caractereTolerante(ch) {
+  const baixo = semAcento(ch.toLowerCase());
+  if (CLASSES_ACENTO[baixo]) return CLASSES_ACENTO[baixo];
+  return baixo.replace(/[.*+?^${}()|[\]\\-]/g, "\\$&");
+}
+
+/**
+ * Monta um padrao de regex tolerante para um termo de busca:
+ * - ignora acentos e caixa;
+ * - aceita espacos/pontos variados entre as palavras;
+ * - aceita nomes do meio ABREVIADOS no documento (ex: busca "Thiago Fernando
+ *   do Amaral Alves dos Santos" destaca "Thiago F. do A.A. dos Santos").
+ */
+function padraoTermoTolerante(termo) {
+  const tokens = termo.trim().split(/\s+/).map((t) => t.replace(/\.+$/, "")).filter(Boolean);
+  if (tokens.length === 0) return null;
+  return tokens
+    .map((tok) => {
+      const corpo = tok.split("").map(caractereTolerante).join("");
+      const ehPreposicao = PREPOSICOES_NOME.includes(semAcento(tok.toLowerCase()));
+      if (tok.length > 3 && !ehPreposicao) {
+        // Palavra "cheia" do nome: aceita tambem so a inicial com ponto opcional
+        return `(?:${corpo}|${caractereTolerante(tok[0])}\\.?)`;
+      }
+      return corpo;
+    })
+    .join("[\\s.]+");
+}
+
 function destacarTexto(texto, termos) {
   if (!texto || !termos || termos.length === 0) return texto;
-  const escapedTerms = termos.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const regex = new RegExp("(" + escapedTerms.join("|") + ")", "gi");
-  const partes = texto.split(regex);
-  return partes.map((parte, i) => {
-    const isMatch = escapedTerms.some(t => new RegExp("^" + t + "$", "i").test(parte));
-    if (isMatch) {
-      return <mark key={i} className="highlight-nome">{parte}</mark>;
-    }
-    return parte;
-  });
+  try {
+    const padroes = termos.filter(Boolean).map(padraoTermoTolerante).filter(Boolean);
+    if (padroes.length === 0) return texto;
+    const nucleo = padroes.join("|");
+    // Lookarounds impedem casar no MEIO de outra palavra (ex: "m" de "com")
+    const regex = new RegExp(`(?<![\\p{L}\\p{N}])(${nucleo})(?![\\p{L}\\p{N}])`, "giu");
+    const teste = new RegExp(`^(?:${nucleo})$`, "iu");
+    const partes = texto.split(regex);
+    return partes.map((parte, i) =>
+      parte && teste.test(parte)
+        ? <mark key={i} className="highlight-nome">{parte}</mark>
+        : parte
+    );
+  } catch {
+    // Qualquer termo problematico: mostra o texto sem destaque, nunca quebra o card
+    return texto;
+  }
 }
 
 export function ResultCard({ item, termosBusca = [] }) {
@@ -20,7 +67,12 @@ export function ResultCard({ item, termosBusca = [] }) {
   const [copiado, setCopiado] = useState(false);
 
   const isHistorico = item.fonte === "historico";
-  const dataFormatada = item.data ? new Date(item.data).toLocaleDateString("pt-BR") : "Data indisponível";
+  // Sem campo de data, tenta extrair do titulo (Arquivo Historico costuma
+  // comecar com "DD/MM/AAAA - Suplemento - ...")
+  const dataDoTitulo = !item.data && (item.titulo || "").match(/^(\d{2}\/\d{2}\/\d{4})/);
+  const dataFormatada = item.data
+    ? new Date(item.data).toLocaleDateString("pt-BR")
+    : (dataDoTitulo ? dataDoTitulo[1] : "Data indisponível");
 
   const urlBase = item.slug
     ? (item.slug.startsWith("http") ? item.slug : "https://www.doe.sp.gov.br/" + item.slug.replace(/^\//, ""))
