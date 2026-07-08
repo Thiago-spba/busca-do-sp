@@ -36,6 +36,7 @@ export function Home() {
   });
   const [termosBuscados, setTermosBuscados] = useState([]);
   const [atualizandoHistoricoId, setAtualizandoHistoricoId] = useState(null);
+  const [progressoLote, setProgressoLote] = useState(null);
 
   useEffect(() => {
     if (isDark) {
@@ -78,8 +79,25 @@ export function Home() {
   };
   const handleExcluirHistorico = (entrada) => historico.excluirBusca(entrada.id);
 
+  /**
+   * Atualiza varias entradas do historico em sequencia (uma de cada vez, reaproveitando
+   * handleAtualizarHistorico), reportando o progresso para a barra de progresso.
+   * Retorna os resultados de cada uma para o HistoricoBuscas montar o resumo final.
+   */
+  const handleAtualizarLote = async (entradas) => {
+    const resultados = [];
+    for (let i = 0; i < entradas.length; i++) {
+      const entrada = entradas[i];
+      setProgressoLote({ atual: i + 1, total: entradas.length, nomeAtual: entrada.nomePrincipal });
+      const r = await handleAtualizarHistorico(entrada);
+      resultados.push({ id: entrada.id, novosAtual: r?.novosAtual || 0, novosHistorico: r?.novosHistorico || 0 });
+    }
+    setProgressoLote(null);
+    return resultados;
+  };
+
   const isBuscando = loadingAtual || loadingHistorico;
-  const operacaoEmAndamento = isBuscando || atualizandoHistoricoId !== null;
+  const operacaoEmAndamento = isBuscando || atualizandoHistoricoId !== null || progressoLote !== null;
   const resAtual = resultados.filter(i => i.fonte === 'atual');
   const resHistorico = resultados.filter(i => i.fonte === 'historico');
   const totalResultados = resultados.length;
@@ -130,7 +148,9 @@ export function Home() {
         historico={historico}
         onAtualizar={handleAtualizarHistorico}
         onExcluir={handleExcluirHistorico}
+        onAtualizarLote={handleAtualizarLote}
         atualizandoId={atualizandoHistoricoId}
+        progressoLote={progressoLote}
         bloqueado={operacaoEmAndamento}
       />
 
