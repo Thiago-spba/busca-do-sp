@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { History, RefreshCw, ChevronDown, ChevronUp, Star, FolderKanban } from "lucide-react";
+import { History, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 
 function formatarData(iso) {
   if (!iso) return "-";
@@ -13,9 +13,8 @@ function formatarCarimbo(timestamp) {
 }
 
 /**
- * Formata um timestamp como tempo relativo em portugues (ex: "ha 3 dias",
- * "ha 2 semanas", "ha 5 meses", "ha 1 ano"), para caber num card sem poluir
- * com data/hora completa. A data exata fica disponivel no title (tooltip).
+ * Formata um timestamp como tempo relativo em portugues (ex: "ha 3 dias").
+ * A data exata fica disponivel no title (tooltip).
  */
 function formatarTempoRelativo(timestamp) {
   if (!timestamp?.toDate) return "";
@@ -35,22 +34,11 @@ function formatarTempoRelativo(timestamp) {
   return diffAnos === 1 ? "há 1 ano" : `há ${diffAnos} anos`;
 }
 
-export function HistoricoBuscas({
-  historico,
-  onAtualizar,
-  onExcluir,
-  onAtribuirLista,
-  onCriarLista,
-  nomesListas,
-  atualizandoId,
-  bloqueado,
-}) {
+export function HistoricoBuscas({ historico, onAtualizar, onExcluir, atualizandoId, bloqueado }) {
   const [aberto, setAberto] = useState(false);
   const [novidades, setNovidades] = useState({}); // { [id]: {novosAtual, novosHistorico} }
   const [expandidoId, setExpandidoId] = useState(null);
   const [confirmandoId, setConfirmandoId] = useState(null);
-  const [menuListaId, setMenuListaId] = useState(null);
-  const [novoNomeLista, setNovoNomeLista] = useState("");
 
   const { buscas, carregando, carregandoMais, temMais, carregarMais } = historico;
 
@@ -62,14 +50,6 @@ export function HistoricoBuscas({
   const handleConfirmarExclusao = async (entrada) => {
     await onExcluir(entrada);
     setConfirmandoId(null);
-  };
-
-  const handleCriarECatribuir = (entrada) => {
-    if (!novoNomeLista.trim()) return;
-    onCriarLista(novoNomeLista.trim());
-    onAtribuirLista(entrada.id, novoNomeLista.trim());
-    setNovoNomeLista("");
-    setMenuListaId(null);
   };
 
   if (!carregando && buscas.length === 0) return null;
@@ -108,8 +88,6 @@ export function HistoricoBuscas({
               const totalNovos = novidade ? novidade.novosAtual + novidade.novosHistorico : undefined;
               const expandido = expandidoId === entrada.id;
               const confirmando = confirmandoId === entrada.id;
-              const noFavoritos = entrada.lista === "Favoritos";
-              const menuAberto = menuListaId === entrada.id;
 
               return (
                 <div
@@ -119,34 +97,24 @@ export function HistoricoBuscas({
                     border: confirmando ? "1px solid #dc2626" : "1px solid var(--border-color)",
                     borderRadius: "10px",
                     padding: "1rem 1.1rem",
-                    position: "relative",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <button
-                        onClick={() => onAtribuirLista(entrada.id, noFavoritos ? null : "Favoritos")}
-                        title={noFavoritos ? "Remover dos Favoritos" : "Adicionar aos Favoritos"}
-                        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: noFavoritos ? "#f59e0b" : "var(--text-muted)", display: "flex" }}
-                      >
-                        <Star size={16} fill={noFavoritos ? "#f59e0b" : "none"} />
-                      </button>
-                      <div>
-                        <div style={{ fontWeight: "600", color: "var(--text-main)", fontSize: "0.95rem" }}>
-                          {entrada.nomePrincipal}
-                        </div>
-                        <div style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginTop: "0.15rem" }}>
-                          {formatarData(entrada.fromDate)} – {formatarData(entrada.toDate)}
-                          {entrada.filtros?.length > 0 && ` · Filtros: ${entrada.filtros.join(", ")}`}
-                          {entrada.lista && entrada.lista !== "Favoritos" && ` · Lista: ${entrada.lista}`}
-                        </div>
-                        {entrada.diagnostico && (
-                          <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginTop: "0.3rem" }}>
-                            Banco Atual: {entrada.diagnostico.atual.totalFonte} na fonte → {entrada.diagnostico.atual.totalFiltrado} no filtro
-                            {" · "}Histórico: {entrada.diagnostico.historico.totalFonte} na fonte → {entrada.diagnostico.historico.totalFiltrado} no filtro
-                          </div>
-                        )}
+                    <div>
+                      <div style={{ fontWeight: "600", color: "var(--text-main)", fontSize: "0.95rem" }}>
+                        {entrada.nomePrincipal}
                       </div>
+                      <div style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginTop: "0.15rem" }}>
+                        {formatarData(entrada.fromDate)} – {formatarData(entrada.toDate)}
+                        {entrada.filtros?.length > 0 && ` · Filtros: ${entrada.filtros.join(", ")}`}
+                        {entrada.listas?.length > 0 && ` · Em: ${entrada.listas.join(", ")}`}
+                      </div>
+                      {entrada.diagnostico && (
+                        <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginTop: "0.3rem" }}>
+                          Banco Atual: {entrada.diagnostico.atual.totalFonte} na fonte → {entrada.diagnostico.atual.totalFiltrado} no filtro
+                          {" · "}Histórico: {entrada.diagnostico.historico.totalFonte} na fonte → {entrada.diagnostico.historico.totalFiltrado} no filtro
+                        </div>
+                      )}
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
                       <div style={{ fontWeight: "600", color: "var(--primary)", fontSize: "1.15rem", lineHeight: 1 }}>
@@ -253,23 +221,6 @@ export function HistoricoBuscas({
                             {atualizandoId === entrada.id ? "Verificando..." : "Atualizar"}
                           </button>
                           <button
-                            onClick={() => setMenuListaId(menuAberto ? null : entrada.id)}
-                            disabled={bloqueado}
-                            title="Adicionar a uma lista"
-                            style={{
-                              background: "none",
-                              border: "1px solid var(--border-color)",
-                              borderRadius: "6px",
-                              padding: "0.35rem 0.55rem",
-                              color: "var(--text-muted)",
-                              cursor: bloqueado ? "default" : "pointer",
-                              opacity: bloqueado ? 0.5 : 1,
-                              display: "flex",
-                            }}
-                          >
-                            <FolderKanban size={14} />
-                          </button>
-                          <button
                             onClick={() => setConfirmandoId(entrada.id)}
                             disabled={bloqueado}
                             title={bloqueado ? "Aguarde a operação em andamento terminar" : undefined}
@@ -294,62 +245,6 @@ export function HistoricoBuscas({
                   {expandido && novidade && (
                     <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border-color)", fontSize: "0.72rem", color: "var(--text-muted)" }}>
                       {novidade.novosAtual} novo(s) no Banco Atual · {novidade.novosHistorico} novo(s) no Arquivo Histórico
-                    </div>
-                  )}
-
-                  {menuAberto && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        right: "1.1rem",
-                        bottom: "-0.5rem",
-                        transform: "translateY(100%)",
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border-color)",
-                        borderRadius: "8px",
-                        padding: "0.6rem",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                        zIndex: 10,
-                        minWidth: "200px",
-                      }}
-                    >
-                      {nomesListas.length > 0 && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem", marginBottom: "0.5rem" }}>
-                          {nomesListas.map((nome) => (
-                            <button
-                              key={nome}
-                              onClick={() => { onAtribuirLista(entrada.id, entrada.lista === nome ? null : nome); setMenuListaId(null); }}
-                              style={{
-                                background: entrada.lista === nome ? "var(--chip-orange)" : "none",
-                                border: "none",
-                                borderRadius: "6px",
-                                padding: "0.4rem 0.5rem",
-                                textAlign: "left",
-                                color: "var(--text-main)",
-                                fontSize: "0.8rem",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {nome}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <div style={{ display: "flex", gap: "0.35rem" }}>
-                        <input
-                          type="text"
-                          value={novoNomeLista}
-                          onChange={(e) => setNovoNomeLista(e.target.value)}
-                          placeholder="Nova lista..."
-                          style={{ flex: 1, padding: "0.35rem 0.5rem", borderRadius: "6px", border: "1px solid var(--border-color)", background: "var(--bg-app)", color: "var(--text-main)", fontSize: "0.78rem" }}
-                        />
-                        <button
-                          onClick={() => handleCriarECatribuir(entrada)}
-                          style={{ background: "var(--primary)", color: "#fff", border: "none", borderRadius: "6px", padding: "0.35rem 0.6rem", fontSize: "0.78rem", cursor: "pointer" }}
-                        >
-                          Criar
-                        </button>
-                      </div>
                     </div>
                   )}
                 </div>

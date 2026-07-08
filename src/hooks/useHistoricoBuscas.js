@@ -20,6 +20,7 @@ import { db, auth } from "../firebase/config";
 
 const TAMANHO_INICIAL = 30;
 const INCREMENTO_PAGINA = 20;
+const LISTA_PADRAO = "Favoritos";
 
 function colecaoBuscas(uid) {
   return collection(db, "usuarios_autorizados", uid, "buscas");
@@ -38,8 +39,12 @@ function hojeISO() {
 }
 
 /**
- * Gerencia o historico de buscas do usuario logado (salvo no Firestore,
- * privado por usuario em usuarios_autorizados/{uid}/buscas).
+ * Gerencia o historico de buscas do usuario logado (privado por usuario em
+ * usuarios_autorizados/{uid}/buscas) e as "Minhas Listas" de acompanhamento.
+ *
+ * Cada busca pode pertencer a varias listas ao mesmo tempo (campo `listas`,
+ * array de nomes). "Favoritos" e uma lista padrao que sempre existe; listas
+ * extras ficam guardadas em meta/listas.
  */
 export function useHistoricoBuscas() {
   const [buscas, setBuscas] = useState([]);
@@ -48,9 +53,7 @@ export function useHistoricoBuscas() {
   const [limiteAtual, setLimiteAtual] = useState(TAMANHO_INICIAL);
   const [temMais, setTemMais] = useState(false);
 
-  // "Minhas Listas": Favoritos (fixa) + listas personalizadas criadas pelo usuario.
-  // Carregadas a parte da paginacao do historico geral, para uma pessoa favoritada
-  // continuar aparecendo aqui mesmo se sair das paginas carregadas do historico.
+  // Nomes das listas EXTRAS (alem de "Favoritos") e os membros de todas as listas.
   const [nomesListas, setNomesListas] = useState([]);
   const [itensListas, setItensListas] = useState([]);
 
@@ -63,9 +66,12 @@ export function useHistoricoBuscas() {
     }
     try {
       const metaSnap = await getDoc(docMetaListas(uid));
-      setNomesListas(metaSnap.exists() ? metaSnap.data().nomes || [] : []);
+      const extras = metaSnap.exists() ? metaSnap.data().nomes || [] : [];
+      setNomesListas(extras);
 
-      const q = query(colecaoBuscas(uid), where("lista", "!=", null));
+      // Uma unica query traz todas as buscas que estao em qualquer lista.
+      const todas = [LISTA_PADRAO, ...extras];
+      const q = query(colecaoBuscas(uid), where("listas", "array-contains-any", todas));
       const snap = await getDocs(q);
       setItensListas(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     } catch (err) {
@@ -74,11 +80,11 @@ export function useHistoricoBuscas() {
   }, []);
 
   /**
-   * Carrega as `limite` buscas mais recentes do Firestore. Busca uma a mais
-   * do que o limite so para saber se existem mais alem dele (`temMais`),
-   * sem precisar de um count() separado.
+   * Carrega as `limite` buscas mais recentes. Busca uma a mais do que o limite
+   * so para saber se ha mais alem dele (`temMais`). Se `silencioso`, nao mostra
+   * o estado "Carregando..." (usado nas recargas apos acoes, para nao piscar).
    */
-  const carregarComLimite = useCallback(async (limite, { comoCarregandoMais = false } = {}) => {
+  const carregarComLimite = useCallback(async (limite, { comoCarregandoMais = false, silencioso = false } = {}) => {
     const uid = auth.currentUser?.uid;
     if (!uid) {
       setBuscas([]);
@@ -87,7 +93,7 @@ export function useHistoricoBuscas() {
       return;
     }
     if (comoCarregandoMais) setCarregandoMais(true);
-    else setCarregando(true);
+    else if (!silencioso) setCarregando(true);
     try {
       const q = query(colecaoBuscas(uid), orderBy("criadoEm", "desc"), limit(limite + 1));
       const snap = await getDocs(q);
@@ -101,14 +107,13 @@ export function useHistoricoBuscas() {
     }
   }, []);
 
-  // Recarrega mantendo a quantidade ja carregada, e tambem as listas (usado apos
-  // salvar/atualizar/excluir/atribuir a uma lista)
+  // Recarrega SILENCIOSAMENTE (sem piscar) o historico e as listas. Usado apos
+  // qualquer acao (salvar/atualizar/excluir/favoritar/criar lista/etc).
   const recarregar = useCallback(async () => {
-    await carregarComLimite(limiteAtual);
+    await carregarComLimite(limiteAtual, { silencioso: true });
     await carregarListas();
   }, [carregarComLimite, limiteAtual, carregarListas]);
 
-  // Traz mais `INCREMENTO_PAGINA` buscas antigas, alem das ja carregadas
   const carregarMais = useCallback(async () => {
     const novoLimite = limiteAtual + INCREMENTO_PAGINA;
     await carregarComLimite(novoLimite, { comoCarregandoMais: true });
@@ -116,7 +121,7 @@ export function useHistoricoBuscas() {
   }, [limiteAtual, carregarComLimite]);
 
   useEffect(() => {
-    // Busca inicial do historico ao montar (sincroniza com o Firestore, uso legitimo de efeito)
+    // Carga inicial ao montar (sincroniza com o Firestore). Aqui SIM mostra "Carregando".
     // eslint-disable-next-line react-hooks/set-state-in-effect
     carregarComLimite(TAMANHO_INICIAL);
     carregarListas();
@@ -137,6 +142,7 @@ export function useHistoricoBuscas() {
         idsAtual,
         idsHistorico,
         diagnostico: diagnostico || null,
+        listas: [],
         criadoEm: serverTimestamp(),
         atualizadoEm: serverTimestamp(),
       });
@@ -147,9 +153,8 @@ export function useHistoricoBuscas() {
   }, [recarregar]);
 
   /**
-   * Reexecuta a busca de uma entrada do historico (do fromDate original ate hoje)
-   * usando a funcao `buscar` do useSearch, compara os IDs encontrados com os
-   * salvos anteriormente e atualiza o registro. Retorna quantos itens sao novos.
+   * Reexecuta a busca de uma entrada (do fromDate original ate hoje), compara os
+   * IDs encontrados com os salvos e atualiza o registro. Retorna quantos sao novos.
    */
   const atualizarBusca = useCallback(async (entrada, buscarFn) => {
     const uid = auth.currentUser?.uid;
@@ -157,9 +162,6 @@ export function useHistoricoBuscas() {
 
     const toDate = hojeISO();
     const resultado = await buscarFn(entrada.termos, entrada.fromDate, toDate);
-    // buscarFn pode retornar null se a busca foi cancelada por uma mais recente
-    // (nao deveria acontecer, ja que a UI so permite uma operacao por vez, mas
-    // e uma protecao barata contra o crash caso isso mude no futuro)
     if (!resultado) return { novosAtual: 0, novosHistorico: 0 };
 
     const idsAtualAntigos = new Set(entrada.idsAtual || []);
@@ -185,7 +187,7 @@ export function useHistoricoBuscas() {
     return { novosAtual, novosHistorico };
   }, [recarregar]);
 
-  /** Exclui uma busca definitivamente (o pedido de confirmacao acontece na UI, antes de chamar isto). */
+  /** Exclui uma busca do historico definitivamente (confirmacao acontece na UI). */
   const excluirBusca = useCallback(async (id) => {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
@@ -197,12 +199,13 @@ export function useHistoricoBuscas() {
     }
   }, [recarregar]);
 
-  /** Cria uma nova lista personalizada (nome livre, ex: "Favoritos - Departamento X"). */
+  /** Cria uma nova lista de favoritos (nome livre). */
   const criarLista = useCallback(async (nome) => {
     const uid = auth.currentUser?.uid;
-    if (!uid || !nome?.trim()) return;
+    const limpo = (nome || "").trim();
+    if (!uid || !limpo || limpo === LISTA_PADRAO) return;
     try {
-      await setDoc(docMetaListas(uid), { nomes: arrayUnion(nome.trim()) }, { merge: true });
+      await setDoc(docMetaListas(uid), { nomes: arrayUnion(limpo) }, { merge: true });
       await carregarListas();
     } catch (err) {
       console.error("Erro ao criar lista:", err);
@@ -210,32 +213,34 @@ export function useHistoricoBuscas() {
   }, [carregarListas]);
 
   /**
-   * Exclui uma lista personalizada inteira: remove o nome da lista de listas e
-   * desatribui (nao apaga) todas as buscas que estavam nela. A lista fixa
-   * "Favoritos" nao pode ser excluida (a UI nao oferece essa opcao pra ela).
+   * Exclui uma lista inteira: tira o nome de meta/listas e remove essa lista de
+   * todas as buscas que estavam nela (a busca continua no historico, so sai da
+   * lista). "Favoritos" nao pode ser excluida.
    */
   const excluirLista = useCallback(async (nome) => {
     const uid = auth.currentUser?.uid;
-    if (!uid) return;
+    if (!uid || nome === LISTA_PADRAO) return;
     try {
       await setDoc(docMetaListas(uid), { nomes: arrayRemove(nome) }, { merge: true });
-      const afetadas = itensListas.filter((b) => b.lista === nome);
-      await Promise.all(afetadas.map((b) => updateDoc(docBusca(uid, b.id), { lista: null })));
+      const membros = itensListas.filter((b) => (b.listas || []).includes(nome));
+      await Promise.all(membros.map((b) => updateDoc(docBusca(uid, b.id), { listas: arrayRemove(nome) })));
       await recarregar();
     } catch (err) {
       console.error("Erro ao excluir lista:", err);
     }
   }, [recarregar, itensListas]);
 
-  /** Atribui (ou remove, se `lista` for null) uma busca a uma lista. */
-  const atribuirLista = useCallback(async (id, lista) => {
+  /** Adiciona (incluir=true) ou remove (incluir=false) uma busca de uma lista. */
+  const definirMembroLista = useCallback(async (id, nome, incluir) => {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
     try {
-      await updateDoc(docBusca(uid, id), { lista: lista || null });
+      await updateDoc(docBusca(uid, id), {
+        listas: incluir ? arrayUnion(nome) : arrayRemove(nome),
+      });
       await recarregar();
     } catch (err) {
-      console.error("Erro ao atribuir busca a uma lista:", err);
+      console.error("Erro ao alterar membros da lista:", err);
     }
   }, [recarregar]);
 
@@ -246,12 +251,13 @@ export function useHistoricoBuscas() {
     temMais,
     nomesListas,
     itensListas,
+    listaPadrao: LISTA_PADRAO,
     salvarBusca,
     atualizarBusca,
     excluirBusca,
     criarLista,
     excluirLista,
-    atribuirLista,
+    definirMembroLista,
     carregarMais,
     recarregar,
   };

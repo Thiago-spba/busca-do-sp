@@ -149,9 +149,6 @@ export function Home() {
         historico={historico}
         onAtualizar={handleAtualizarHistorico}
         onExcluir={handleExcluirHistorico}
-        onAtribuirLista={historico.atribuirLista}
-        onCriarLista={historico.criarLista}
-        nomesListas={historico.nomesListas}
         atualizandoId={atualizandoHistoricoId}
         bloqueado={operacaoEmAndamento}
       />
@@ -159,8 +156,10 @@ export function Home() {
       <MinhasListas
         nomesListas={historico.nomesListas}
         itensListas={historico.itensListas}
+        buscas={historico.buscas}
+        listaPadrao={historico.listaPadrao}
         onAtualizarLote={handleAtualizarLote}
-        onRemoverDaLista={(id) => historico.atribuirLista(id, null)}
+        onDefinirMembro={historico.definirMembroLista}
         onCriarLista={historico.criarLista}
         onExcluirLista={historico.excluirLista}
         progressoLote={progressoLote}
