@@ -144,10 +144,14 @@ export function useSearch() {
         if (item.fonte === "atual") {
           return nomeCompletoBate(tokensTexto, palavras);
         } else {
-          // Exige a primeira palavra do nome + pelo menos mais 2 palavras proximas
-          // (ou todas, se o nome tiver poucas palavras)
-          const minimo = Math.max(2, palavras.length - 2);
-          return nomeAparecePorProximidade(tokensTexto, palavras, minimo, 18);
+          // Exige a primeira palavra do nome + quase todas as outras (so 1 pode faltar)
+          // numa janela ESTREITA de palavras. Documentos antigos sao frequentemente
+          // listas densas de RG com dezenas de nomes diferentes emendados sem separador
+          // claro; uma janela larga ou um limiar frouxo faz sobrenomes comuns de OUTRAS
+          // pessoas (Fernando, Alves, Santos...) caírem coincidentemente perto do nome
+          // buscado e gerar falso positivo.
+          const minimo = Math.max(2, palavras.length - 1);
+          return nomeAparecePorProximidade(tokensTexto, palavras, minimo, 8);
         }
       });
 
