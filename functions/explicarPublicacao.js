@@ -25,7 +25,7 @@ async function pedirExplicacaoIA(apiKey, titulo, trecho) {
     body: JSON.stringify({
       model: MODELO,
       max_tokens: 220,
-      system: "Voce explica publicacoes burocraticas do Diario Oficial de Sao Paulo em portugues simples, para servidores de escola sem formacao juridica. Responda em no maximo 3 frases curtas, direto ao ponto, sem repetir o texto original e sem inventar nenhuma informacao que nao esteja no texto fornecido.",
+      system: "Voce explica publicacoes burocraticas do Diario Oficial de Sao Paulo em portugues simples, para servidores de escola sem formacao juridica. Responda em no maximo 3 frases curtas, direto ao ponto, sem repetir o texto original e sem inventar nenhuma informacao que nao esteja no texto fornecido. Na ultima frase, se der pra identificar, diga a que assunto isso parece pertencer (ex: Licenca Saude, Quinquenio, Evolucao Funcional, Exoneracao, Designacao) - so mencione se estiver razoavelmente claro no texto, sem forcar uma categoria.",
       messages: [
         { role: "user", content: `Titulo: ${titulo}\n\nTexto: ${trecho}\n\nExplique em linguagem simples o que essa publicacao significa.` },
       ],

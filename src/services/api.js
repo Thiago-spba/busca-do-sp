@@ -65,3 +65,25 @@ export async function explicarPublicacaoAPI(item) {
     return { sucesso: false, erro: "Não foi possível conectar ao servidor." };
   }
 }
+
+export async function resumirNovidadesAPI(nomePrincipal, itens) {
+  try {
+    const headers = await cabecalhosAutenticados();
+    const res = await fetch(`${BASE_URL}/resumirNovidades`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nomePrincipal,
+        itens: itens.map((item) => ({ titulo: item.titulo, trecho: item.trecho })),
+      }),
+    });
+    const dados = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { sucesso: false, erro: dados?.erro || "Não foi possível gerar o resumo." };
+    }
+    return dados;
+  } catch (err) {
+    console.error(err);
+    return { sucesso: false, erro: "Não foi possível conectar ao servidor." };
+  }
+}

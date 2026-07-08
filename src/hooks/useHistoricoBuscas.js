@@ -160,16 +160,22 @@ export function useHistoricoBuscas() {
    */
   const atualizarBusca = useCallback(async (entrada, buscarFn) => {
     const uid = auth.currentUser?.uid;
-    if (!uid) return { novosAtual: 0, novosHistorico: 0 };
+    if (!uid) return { novosAtual: 0, novosHistorico: 0, novosItens: [] };
 
     const toDate = hojeISO();
     const resultado = await buscarFn(entrada.termos, entrada.fromDate, toDate);
-    if (!resultado) return { novosAtual: 0, novosHistorico: 0 };
+    if (!resultado) return { novosAtual: 0, novosHistorico: 0, novosItens: [] };
 
     const idsAtualAntigos = new Set(entrada.idsAtual || []);
     const idsHistoricoAntigos = new Set(entrada.idsHistorico || []);
     const novosAtual = resultado.idsAtual.filter((id) => !idsAtualAntigos.has(id)).length;
     const novosHistorico = resultado.idsHistorico.filter((id) => !idsHistoricoAntigos.has(id)).length;
+    // Itens completos (com trecho) dos documentos NOVOS, so em memoria, para
+    // alimentar o resumo de novidades por IA - nunca persistidos no Firestore.
+    const novosItens = [
+      ...(resultado.itensAtualCompletos || []).filter((item) => !idsAtualAntigos.has(item.id)),
+      ...(resultado.itensHistoricoCompletos || []).filter((item) => !idsHistoricoAntigos.has(item.id)),
+    ];
 
     try {
       await updateDoc(docBusca(uid, entrada.id), {
@@ -188,7 +194,7 @@ export function useHistoricoBuscas() {
       console.error("Erro ao atualizar busca no historico:", err);
     }
 
-    return { novosAtual, novosHistorico };
+    return { novosAtual, novosHistorico, novosItens };
   }, [recarregar]);
 
   /** Exclui uma busca do historico definitivamente (confirmacao acontece na UI). */

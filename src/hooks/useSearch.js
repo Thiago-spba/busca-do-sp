@@ -215,6 +215,11 @@ export function useSearch() {
     });
     const itensAtual = [];
     const itensHistorico = [];
+    // Itens COMPLETOS (com trecho) desta busca, so pra uso transiente em memoria
+    // (ex: resumo de novidades) - nunca sao persistidos no Firestore, que so
+    // guarda o resumoItem leve acima.
+    const itensAtualCompletos = [];
+    const itensHistoricoCompletos = [];
     // Contadores de diagnostico: quantos itens a fonte reporta ter no total,
     // quantos ela de fato nos devolveu, e quantos sobreviveram ao nosso filtro.
     // Ajudam a distinguir "a fonte nao achou nada" de "nosso filtro descartou".
@@ -228,7 +233,7 @@ export function useSearch() {
       setLoadingAtual(false);
       if (res.sucesso && res.itens) {
         const filtrados = filtrarItens(res.itens);
-        filtrados.forEach((item) => { idsAtual.push(item.id); itensAtual.push(resumoItem(item)); });
+        filtrados.forEach((item) => { idsAtual.push(item.id); itensAtual.push(resumoItem(item)); itensAtualCompletos.push(item); });
         diagnostico.atual = {
           totalFonte: res.totalItems || res.itens.length,
           totalRecebido: res.itens.length,
@@ -249,7 +254,7 @@ export function useSearch() {
       setLoadingHistorico(false);
       if (res.sucesso && res.itens) {
         const filtrados = filtrarItens(res.itens);
-        filtrados.forEach((item) => { idsHistorico.push(item.id); itensHistorico.push(resumoItem(item)); });
+        filtrados.forEach((item) => { idsHistorico.push(item.id); itensHistorico.push(resumoItem(item)); itensHistoricoCompletos.push(item); });
         diagnostico.historico = {
           totalFonte: res.totalEncontrado || res.itens.length,
           totalRecebido: res.itens.length,
@@ -276,6 +281,8 @@ export function useSearch() {
       idsHistorico,
       itensAtual,
       itensHistorico,
+      itensAtualCompletos,
+      itensHistoricoCompletos,
       totalAtual: idsAtual.length,
       totalHistorico: idsHistorico.length,
       diagnostico,

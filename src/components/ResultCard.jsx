@@ -1,7 +1,19 @@
 import React, { useState } from "react";
-import { ExternalLink, ChevronDown, ChevronUp, Copy, Check, Lightbulb } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, Copy, Check, Lightbulb, Share2 } from "lucide-react";
 import { formatarDataDocumento, montarLinkOficial } from "../utils/linkOficial";
 import { explicarPublicacaoAPI } from "../services/api";
+
+/**
+ * Deteccao simples (sem IA, sem custo) de mencao a prazo no texto do
+ * documento, pra chamar atencao pra algo com data limite sem precisar clicar
+ * em nada. Ex: "no prazo de 30 dias", "prazo de 15 (quinze) dias uteis".
+ */
+function detectarPrazo(texto) {
+  if (!texto) return null;
+  const regex = /prazo[^.;\n]{0,60}?\d+\s*(?:\([^)]*\)\s*)?dias?(?:\s+úteis)?/i;
+  const m = texto.match(regex);
+  return m ? m[0].trim() : null;
+}
 
 // Classes de caracteres para casar letras COM ou SEM acento (busca "Jose"
 // destaca "José" e vice-versa)
@@ -112,6 +124,7 @@ export function ResultCard({ item, termosBusca = [] }) {
   const [explicacao, setExplicacao] = useState(null);
   const [carregandoExplicacao, setCarregandoExplicacao] = useState(false);
   const [erroExplicacao, setErroExplicacao] = useState(null);
+  const [compartilhando, setCompartilhando] = useState(false);
 
   const handleExplicar = async () => {
     setCarregandoExplicacao(true);
@@ -123,6 +136,23 @@ export function ResultCard({ item, termosBusca = [] }) {
       setErroExplicacao(resultado.erro || "Não foi possível gerar a explicação.");
     }
     setCarregandoExplicacao(false);
+    return resultado;
+  };
+
+  // Compartilha resumo (gera na hora se ainda nao existir) + link oficial
+  // juntos numa unica mensagem, abrindo o WhatsApp com o texto pronto.
+  const handleCompartilhar = async () => {
+    let textoResumo = explicacao;
+    if (!textoResumo) {
+      setCompartilhando(true);
+      const resultado = await handleExplicar();
+      setCompartilhando(false);
+      if (!resultado.sucesso) return;
+      textoResumo = resultado.texto;
+    }
+    const partes = [textoResumo];
+    if (linkOriginal) partes.push(linkOriginal);
+    window.open(`https://wa.me/?text=${encodeURIComponent(partes.join("\n\n"))}`, "_blank", "noopener,noreferrer");
   };
 
   const isHistorico = item.fonte === "historico";
@@ -146,6 +176,7 @@ export function ResultCard({ item, termosBusca = [] }) {
   // caracteres, que podem nao conter o nome se ele aparecer mais adiante).
   const trechoCurto = extrairTrechoCentralizado(trechoCompleto, termosBusca, 160);
   const temMaisDetalhes = Boolean(item.hierarquia) || trechoCompleto !== trechoCurto || (isHistorico && nomePrincipal);
+  const prazoDetectado = detectarPrazo(trechoCompleto);
 
   return (
     <div className="result-card" data-color={item.color || "neutro"}>
@@ -154,24 +185,41 @@ export function ResultCard({ item, termosBusca = [] }) {
         <span className="card-date">{dataFormatada}</span>
       </div>
 
+      {prazoDetectado && (
+        <div style={{ background: "var(--chip-orange)", color: "var(--chip-orange-text)", borderRadius: "6px", padding: "0.3rem 0.6rem", fontSize: "0.78rem", fontWeight: 600, marginBottom: "0.6rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+          ⏰ {prazoDetectado}
+        </div>
+      )}
+
       <div className="card-excerpt" style={{ whiteSpace: "pre-wrap" }}>
         {expandido ? destacarTexto(trechoCompleto, termosBusca) : destacarTexto(trechoCurto, termosBusca)}
       </div>
 
-      {explicacao ? (
-        <div style={{ background: "var(--chip-blue)", color: "var(--chip-blue-text)", borderRadius: "8px", padding: "0.75rem 0.9rem", fontSize: "0.85rem", lineHeight: "1.5", marginBottom: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "1.1rem", flexWrap: "wrap" }}>
+        {!explicacao && (
+          <button onClick={handleExplicar} disabled={carregandoExplicacao} className="btn-explicar-ia" style={{ marginBottom: 0 }}>
+            <Lightbulb size={20} className="icone-lampada-ia" />
+            {carregandoExplicacao ? "Gerando explicação..." : "Explicar em linguagem simples"}
+          </button>
+        )}
+        <button
+          onClick={handleCompartilhar}
+          disabled={compartilhando || carregandoExplicacao}
+          style={{ background: "none", border: "none", color: "#25D366", cursor: compartilhando ? "default" : "pointer", fontSize: "0.85rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.25rem 0", opacity: compartilhando ? 0.7 : 1 }}
+        >
+          <Share2 size={16} /> {compartilhando ? "Preparando..." : "Compartilhar no WhatsApp"}
+        </button>
+      </div>
+
+      {explicacao && (
+        <div style={{ background: "var(--chip-blue)", color: "var(--chip-blue-text)", borderRadius: "8px", padding: "0.75rem 0.9rem", fontSize: "0.85rem", lineHeight: "1.5", marginTop: "0.6rem", marginBottom: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
           <Lightbulb size={18} className="icone-lampada-ia" style={{ flexShrink: 0, marginTop: "0.1rem" }} />
           <span>{explicacao}</span>
         </div>
-      ) : (
-        <button onClick={handleExplicar} disabled={carregandoExplicacao} className="btn-explicar-ia">
-          <Lightbulb size={20} className="icone-lampada-ia" />
-          {carregandoExplicacao ? "Gerando explicação..." : "Explicar em linguagem simples"}
-        </button>
       )}
 
       {erroExplicacao && (
-        <div style={{ color: "var(--chip-red-text)", fontSize: "0.8rem", marginBottom: "0.75rem" }}>{erroExplicacao}</div>
+        <div style={{ color: "var(--chip-red-text)", fontSize: "0.8rem", marginTop: "0.5rem", marginBottom: "0.75rem" }}>{erroExplicacao}</div>
       )}
 
       {temMaisDetalhes && (

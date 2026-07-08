@@ -66,3 +66,7 @@ exports.verificarAcesso = verificarAcesso;
 // Explicacao de publicacoes em linguagem simples (IA, sob demanda)
 const { explicarPublicacao } = require("./explicarPublicacao");
 exports.explicarPublicacao = explicarPublicacao;
+
+// Resumo de novidades ao atualizar uma pessoa em Minhas Listas (IA, sob demanda)
+const { resumirNovidades } = require("./resumirNovidades");
+exports.resumirNovidades = resumirNovidades;

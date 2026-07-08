@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Star, FolderKanban, ChevronDown, ChevronUp, RefreshCw, Trash2, Plus, UserPlus } from "lucide-react";
+import { Star, FolderKanban, ChevronDown, ChevronUp, RefreshCw, Trash2, Plus, UserPlus, Lightbulb } from "lucide-react";
 import { ListaDocumentos } from "./ListaDocumentos";
+import { resumirNovidadesAPI } from "../services/api";
 
 function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarLote, onDefinirMembro, onExcluirLista, atualizandoId, progressoLote, bloqueado }) {
   const [aberto, setAberto] = useState(false);
@@ -25,9 +26,25 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarL
 
   // Busca novamente essa pessoa e ja mostra se teve novidade - tudo num so
   // botao, sem pular a tela: o resultado aparece aqui mesmo, no card dela.
+  // Se houver documentos novos, pede pra IA um resumo curto do que mudou,
+  // em vez do usuario ter que ler os trechos um por um.
   const handleVerEAtualizar = async (entrada) => {
-    const { novosAtual, novosHistorico } = await onAtualizar(entrada);
-    setNovidades((prev) => ({ ...prev, [entrada.id]: { novosAtual, novosHistorico } }));
+    const { novosAtual, novosHistorico, novosItens } = await onAtualizar(entrada);
+    const temNovidade = (novosItens?.length || 0) > 0;
+    setNovidades((prev) => ({ ...prev, [entrada.id]: { novosAtual, novosHistorico, gerandoResumo: temNovidade } }));
+
+    if (temNovidade) {
+      const resultado = await resumirNovidadesAPI(entrada.nomePrincipal, novosItens);
+      setNovidades((prev) => ({
+        ...prev,
+        [entrada.id]: {
+          ...prev[entrada.id],
+          gerandoResumo: false,
+          resumoTexto: resultado.sucesso ? resultado.texto : null,
+          erroResumo: resultado.sucesso ? null : resultado.erro,
+        },
+      }));
+    }
   };
 
   return (
@@ -140,6 +157,23 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarL
                       <span>Ainda não verificado nesta sessão</span>
                     )}
                   </div>
+
+                  {novidade?.gerandoResumo && (
+                    <div className="tracking-status" style={{ marginTop: "0.3rem" }}>
+                      <Lightbulb size={14} className="icone-lampada-ia" /> Gerando resumo das novidades...
+                    </div>
+                  )}
+
+                  {novidade?.resumoTexto && (
+                    <div style={{ background: "var(--chip-blue)", color: "var(--chip-blue-text)", borderRadius: "8px", padding: "0.7rem 0.9rem", fontSize: "0.85rem", lineHeight: "1.5", marginTop: "0.5rem", display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+                      <Lightbulb size={16} className="icone-lampada-ia" style={{ flexShrink: 0, marginTop: "0.1rem" }} />
+                      <span>{novidade.resumoTexto}</span>
+                    </div>
+                  )}
+
+                  {novidade?.erroResumo && (
+                    <div style={{ color: "var(--chip-red-text)", fontSize: "0.8rem", marginTop: "0.3rem" }}>{novidade.erroResumo}</div>
+                  )}
 
                   <ListaDocumentos
                     itensAtual={entrada.itensAtual}
