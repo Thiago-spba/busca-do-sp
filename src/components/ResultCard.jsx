@@ -42,12 +42,16 @@ function padraoTermoTolerante(termo) {
     .join("[\\s.]+");
 }
 
+function montarNucleoRegex(termos) {
+  const padroes = (termos || []).filter(Boolean).map(padraoTermoTolerante).filter(Boolean);
+  return padroes.length > 0 ? padroes.join("|") : null;
+}
+
 function destacarTexto(texto, termos) {
   if (!texto || !termos || termos.length === 0) return texto;
   try {
-    const padroes = termos.filter(Boolean).map(padraoTermoTolerante).filter(Boolean);
-    if (padroes.length === 0) return texto;
-    const nucleo = padroes.join("|");
+    const nucleo = montarNucleoRegex(termos);
+    if (!nucleo) return texto;
     // Lookarounds impedem casar no MEIO de outra palavra (ex: "m" de "com")
     const regex = new RegExp(`(?<![\\p{L}\\p{N}])(${nucleo})(?![\\p{L}\\p{N}])`, "giu");
     const teste = new RegExp(`^(?:${nucleo})$`, "iu");
@@ -61,6 +65,44 @@ function destacarTexto(texto, termos) {
     // Qualquer termo problematico: mostra o texto sem destaque, nunca quebra o card
     return texto;
   }
+}
+
+/**
+ * Recorta um trecho CURTO centralizado na primeira ocorrencia de qualquer
+ * termo buscado, em vez de simplesmente pegar os primeiros N caracteres
+ * (que podem nao conter o nome, se ele aparecer mais adiante no texto).
+ * Se nenhum termo for encontrado (ex: trecho so bateu por outro motivo),
+ * cai de volta para o inicio do texto.
+ */
+function extrairTrechoCentralizado(texto, termos, tamanho = 160) {
+  if (!texto) return "";
+  if (texto.length <= tamanho) return texto;
+
+  let posicaoMatch = -1;
+  try {
+    const nucleo = montarNucleoRegex(termos);
+    if (nucleo) {
+      const regex = new RegExp(`(?<![\\p{L}\\p{N}])(?:${nucleo})(?![\\p{L}\\p{N}])`, "iu");
+      const m = texto.match(regex);
+      if (m) posicaoMatch = m.index;
+    }
+  } catch {
+    posicaoMatch = -1;
+  }
+
+  if (posicaoMatch === -1) {
+    return texto.substring(0, tamanho) + "...";
+  }
+
+  const margemAntes = Math.floor(tamanho * 0.35);
+  let inicio = Math.max(0, posicaoMatch - margemAntes);
+  let fim = Math.min(texto.length, inicio + tamanho);
+  inicio = Math.max(0, fim - tamanho);
+
+  let recorte = texto.substring(inicio, fim);
+  if (inicio > 0) recorte = "..." + recorte;
+  if (fim < texto.length) recorte = recorte + "...";
+  return recorte;
 }
 
 export function ResultCard({ item, termosBusca = [] }) {
@@ -84,7 +126,10 @@ export function ResultCard({ item, termosBusca = [] }) {
   };
 
   const trechoCompleto = item.trecho || "Trecho não disponível";
-  const trechoCurto = trechoCompleto.length > 200 ? trechoCompleto.substring(0, 200) + "..." : trechoCompleto;
+  // Recorte curto CENTRALIZADO no nome buscado (nao apenas os primeiros 200
+  // caracteres, que podem nao conter o nome se ele aparecer mais adiante).
+  const trechoCurto = extrairTrechoCentralizado(trechoCompleto, termosBusca, 160);
+  const temMaisDetalhes = Boolean(item.hierarquia) || trechoCompleto !== trechoCurto || (isHistorico && nomePrincipal);
 
   return (
     <div className="result-card" data-color={item.color || "neutro"}>
@@ -93,23 +138,23 @@ export function ResultCard({ item, termosBusca = [] }) {
         <span className="card-date">{dataFormatada}</span>
       </div>
 
-      {item.hierarquia && (
+      <div className="card-excerpt" style={{ whiteSpace: "pre-wrap" }}>
+        {expandido ? destacarTexto(trechoCompleto, termosBusca) : destacarTexto(trechoCurto, termosBusca)}
+      </div>
+
+      {temMaisDetalhes && (
+        <button onClick={() => setExpandido(!expandido)} style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0", marginBottom: "0.75rem", fontWeight: "500" }}>
+          {expandido ? (<><ChevronUp size={14} /> Ver menos</>) : (<><ChevronDown size={14} /> Ver mais detalhes</>)}
+        </button>
+      )}
+
+      {expandido && item.hierarquia && (
         <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.75rem", lineHeight: "1.4", fontStyle: "italic" }}>
           📂 {item.hierarquia}
         </div>
       )}
 
-      <div className="card-excerpt" style={{ whiteSpace: "pre-wrap" }}>
-        {expandido ? destacarTexto(trechoCompleto, termosBusca) : destacarTexto(trechoCurto, termosBusca)}
-      </div>
-
-      {trechoCompleto.length > 200 && (
-        <button onClick={() => setExpandido(!expandido)} style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0", marginBottom: "0.75rem", fontWeight: "500" }}>
-          {expandido ? (<><ChevronUp size={14} /> Recolher</>) : (<><ChevronDown size={14} /> Ver trecho completo</>)}
-        </button>
-      )}
-
-      {isHistorico && nomePrincipal && (
+      {expandido && isHistorico && nomePrincipal && (
         <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", background: "var(--bg-card)", border: "1px dashed var(--border-color)", borderRadius: "8px", padding: "0.5rem 0.7rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
           <span>📄 Este link abre um PDF. O destaque automático não funciona em PDFs — copie o nome e use <strong>Ctrl+F</strong> dentro do arquivo para localizá-lo rápido.</span>
           <button onClick={copiarNome} style={{ background: copiado ? "var(--primary)" : "transparent", color: copiado ? "#fff" : "var(--primary)", border: "1px solid var(--primary)", borderRadius: "6px", padding: "0.25rem 0.6rem", cursor: "pointer", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.3rem", whiteSpace: "nowrap" }}>
