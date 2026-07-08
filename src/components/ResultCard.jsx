@@ -160,16 +160,13 @@ export function ResultCard({ item, termosBusca = [] }) {
 
       {explicacao ? (
         <div style={{ background: "var(--chip-blue)", color: "var(--chip-blue-text)", borderRadius: "8px", padding: "0.75rem 0.9rem", fontSize: "0.85rem", lineHeight: "1.5", marginBottom: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
-          <Lightbulb size={16} style={{ flexShrink: 0, marginTop: "0.15rem" }} />
+          <Lightbulb size={18} className="icone-lampada-ia" style={{ flexShrink: 0, marginTop: "0.1rem" }} />
           <span>{explicacao}</span>
         </div>
       ) : (
-        <button
-          onClick={handleExplicar}
-          disabled={carregandoExplicacao}
-          style={{ background: "none", border: "none", color: "var(--primary)", cursor: carregandoExplicacao ? "default" : "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.25rem 0", marginBottom: "0.5rem", fontWeight: "500", opacity: carregandoExplicacao ? 0.7 : 1 }}
-        >
-          <Lightbulb size={14} /> {carregandoExplicacao ? "Gerando explicação..." : "Explicar em linguagem simples"}
+        <button onClick={handleExplicar} disabled={carregandoExplicacao} className="btn-explicar-ia">
+          <Lightbulb size={20} className="icone-lampada-ia" />
+          {carregandoExplicacao ? "Gerando explicação..." : "Explicar em linguagem simples"}
         </button>
       )}
 
