@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { auth } from "../firebase/config";
 import {
   listarUsuariosAPI,
   bloquearUsuarioAPI,
@@ -146,7 +147,12 @@ export function AdminPage() {
             usuarios.map((u) => (
               <div key={u.uid} className="tracking-card" style={{ marginBottom: "0.85rem" }}>
                 <div className="tracking-card-row">
-                  <span className="tracking-name">{u.email}</span>
+                  <span className="tracking-name">
+                    {u.email}
+                    {u.uid === auth.currentUser?.uid && (
+                      <span style={{ color: "var(--text-muted)", fontWeight: 400 }}> (você)</span>
+                    )}
+                  </span>
                   <span style={{ fontSize: "0.8rem", fontWeight: 600, color: u.bloqueado ? "#dc2626" : "#15803d" }}>
                     {u.bloqueado ? "Bloqueado" : "Ativo"}
                   </span>
@@ -157,14 +163,16 @@ export function AdminPage() {
                   <button className="tracking-btn-ghost" onClick={() => handleVerHistorico(u.uid)}>
                     {historicoAbertoUid === u.uid ? "Ocultar histórico" : "Ver histórico"}
                   </button>
-                  <button
-                    className="tracking-btn"
-                    style={u.bloqueado ? undefined : { background: "#dc2626" }}
-                    onClick={() => handleBloquear(u.uid, !u.bloqueado)}
-                    disabled={processandoUid === u.uid}
-                  >
-                    {processandoUid === u.uid ? "..." : u.bloqueado ? "Desbloquear" : "Bloquear"}
-                  </button>
+                  {u.uid !== auth.currentUser?.uid && (
+                    <button
+                      className="tracking-btn"
+                      style={u.bloqueado ? undefined : { background: "#dc2626" }}
+                      onClick={() => handleBloquear(u.uid, !u.bloqueado)}
+                      disabled={processandoUid === u.uid}
+                    >
+                      {processandoUid === u.uid ? "..." : u.bloqueado ? "Desbloquear" : "Bloquear"}
+                    </button>
+                  )}
                 </div>
 
                 {historicoAbertoUid === u.uid && (
