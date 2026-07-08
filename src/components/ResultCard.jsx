@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { ExternalLink, ChevronDown, ChevronUp, Copy, Check, Lightbulb, Share2 } from "lucide-react";
 import { formatarDataDocumento, montarLinkOficial } from "../utils/linkOficial";
 import { explicarPublicacaoAPI } from "../services/api";
@@ -125,8 +125,13 @@ export function ResultCard({ item, termosBusca = [] }) {
   const [carregandoExplicacao, setCarregandoExplicacao] = useState(false);
   const [erroExplicacao, setErroExplicacao] = useState(null);
   const [compartilhando, setCompartilhando] = useState(false);
+  // Trava contra clique duplo/quase-simultaneo, que poderia disparar a IA
+  // duas vezes pro mesmo documento antes do botao ficar desabilitado na tela.
+  const emAndamentoRef = useRef(false);
 
   const handleExplicar = async () => {
+    if (emAndamentoRef.current) return null;
+    emAndamentoRef.current = true;
     setCarregandoExplicacao(true);
     setErroExplicacao(null);
     const resultado = await explicarPublicacaoAPI(item);
@@ -136,6 +141,7 @@ export function ResultCard({ item, termosBusca = [] }) {
       setErroExplicacao(resultado.erro || "Não foi possível gerar a explicação.");
     }
     setCarregandoExplicacao(false);
+    emAndamentoRef.current = false;
     return resultado;
   };
 
@@ -147,7 +153,7 @@ export function ResultCard({ item, termosBusca = [] }) {
       setCompartilhando(true);
       const resultado = await handleExplicar();
       setCompartilhando(false);
-      if (!resultado.sucesso) return;
+      if (!resultado?.sucesso) return;
       textoResumo = resultado.texto;
     }
     const partes = [textoResumo];

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Star, FolderKanban, ChevronDown, ChevronUp, RefreshCw, Trash2, Plus, UserPlus, Lightbulb } from "lucide-react";
 import { ListaDocumentos } from "./ListaDocumentos";
 import { resumirNovidadesAPI } from "../services/api";
@@ -9,6 +9,10 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarL
   const [novidades, setNovidades] = useState({});
   const [resumo, setResumo] = useState(null);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  // Trava por pessoa: o botao "Ver e atualizar" volta a ficar clicavel assim
+  // que a busca termina, mas a IA ainda pode estar gerando o resumo - esse
+  // ref impede um segundo clique nesse intervalo, que chamaria a IA a toa.
+  const gerandoResumoRef = useRef(new Set());
 
   const idsMembros = new Set(membros.map((m) => m.id));
 
@@ -29,21 +33,28 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarL
   // Se houver documentos novos, pede pra IA um resumo curto do que mudou,
   // em vez do usuario ter que ler os trechos um por um.
   const handleVerEAtualizar = async (entrada) => {
+    if (gerandoResumoRef.current.has(entrada.id)) return;
+
     const { novosAtual, novosHistorico, novosItens } = await onAtualizar(entrada);
     const temNovidade = (novosItens?.length || 0) > 0;
     setNovidades((prev) => ({ ...prev, [entrada.id]: { novosAtual, novosHistorico, gerandoResumo: temNovidade } }));
 
     if (temNovidade) {
-      const resultado = await resumirNovidadesAPI(entrada.nomePrincipal, novosItens);
-      setNovidades((prev) => ({
-        ...prev,
-        [entrada.id]: {
-          ...prev[entrada.id],
-          gerandoResumo: false,
-          resumoTexto: resultado.sucesso ? resultado.texto : null,
-          erroResumo: resultado.sucesso ? null : resultado.erro,
-        },
-      }));
+      gerandoResumoRef.current.add(entrada.id);
+      try {
+        const resultado = await resumirNovidadesAPI(entrada.nomePrincipal, novosItens);
+        setNovidades((prev) => ({
+          ...prev,
+          [entrada.id]: {
+            ...prev[entrada.id],
+            gerandoResumo: false,
+            resumoTexto: resultado.sucesso ? resultado.texto : null,
+            erroResumo: resultado.sucesso ? null : resultado.erro,
+          },
+        }));
+      } finally {
+        gerandoResumoRef.current.delete(entrada.id);
+      }
     }
   };
 
@@ -184,12 +195,12 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarL
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.6rem", marginTop: "0.85rem", flexWrap: "wrap" }}>
                     <button
                       onClick={() => handleVerEAtualizar(entrada)}
-                      disabled={bloqueado}
+                      disabled={bloqueado || novidade?.gerandoResumo}
                       className="tracking-btn"
                       title={bloqueado && !carregandoEsta ? "Aguarde a operação em andamento terminar" : undefined}
                     >
-                      <RefreshCw size={14} className={carregandoEsta ? "spin" : ""} />
-                      {carregandoEsta ? "Buscando..." : "Ver e atualizar"}
+                      <RefreshCw size={14} className={carregandoEsta || novidade?.gerandoResumo ? "spin" : ""} />
+                      {carregandoEsta ? "Buscando..." : novidade?.gerandoResumo ? "Gerando resumo..." : "Ver e atualizar"}
                     </button>
                     <button
                       onClick={() => onDefinirMembro(entrada.id, nome, false)}
