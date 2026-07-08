@@ -9,6 +9,18 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarL
   const [expandidoId, setExpandidoId] = useState(null);
   const [resumo, setResumo] = useState(null);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  // Cada pessoa comeca colapsada (so nome + contagem); os documentos e as acoes
+  // so aparecem quando expandida, para listas com muita gente nao ficarem enormes.
+  const [membrosAbertos, setMembrosAbertos] = useState(new Set());
+
+  const alternarMembro = (id) => {
+    setMembrosAbertos((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(id)) novo.delete(id);
+      else novo.add(id);
+      return novo;
+    });
+  };
 
   const idsMembros = new Set(membros.map((m) => m.id));
 
@@ -180,67 +192,81 @@ function SecaoLista({ nome, ehPadrao, membros, buscas, onAtualizar, onAtualizarL
               const novidade = novidades[entrada.id];
               const totalNovos = novidade ? novidade.novosAtual + novidade.novosHistorico : undefined;
               const expandido = expandidoId === entrada.id;
+              const membroAberto = membrosAbertos.has(entrada.id);
               return (
-                <div key={entrada.id} style={{ background: "var(--bg-app)", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "0.6rem 0.85rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: "600", color: "var(--text-main)", fontSize: "0.86rem" }}>{entrada.nomePrincipal}</div>
-                      <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", display: "flex", alignItems: "center", flexWrap: "wrap", gap: "0.3rem" }}>
-                        <span>{(entrada.totalAtual || 0) + (entrada.totalHistorico || 0)} resultado(s)</span>
-                        {totalNovos !== undefined && (
-                          totalNovos > 0 ? (
-                            <button
-                              onClick={() => setExpandidoId(expandido ? null : entrada.id)}
-                              style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.72rem" }}
-                            >
-                              <span className="highlight-nome">{totalNovos} novo(s)!</span>
-                              {expandido ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                            </button>
-                          ) : (
-                            <span>· sem novidades</span>
-                          )
-                        )}
-                      </div>
-                      {expandido && novidade && (
-                        <div style={{ marginTop: "0.35rem", fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                          {novidade.novosAtual} novo(s) no Banco Atual · {novidade.novosHistorico} novo(s) no Arquivo Histórico
+                <div key={entrada.id} style={{ background: "var(--bg-app)", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "0.5rem 0.85rem" }}>
+                  <button
+                    onClick={() => alternarMembro(entrada.id)}
+                    style={{ display: "flex", alignItems: "center", gap: "0.5rem", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
+                  >
+                    <span style={{ flex: 1, fontWeight: "600", color: "var(--text-main)", fontSize: "0.86rem" }}>{entrada.nomePrincipal}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", flexShrink: 0 }}>
+                      {(entrada.totalAtual || 0) + (entrada.totalHistorico || 0)} resultado(s)
+                    </span>
+                    {membroAberto ? <ChevronUp size={14} color="var(--text-muted)" /> : <ChevronDown size={14} color="var(--text-muted)" />}
+                  </button>
+
+                  {membroAberto && (
+                    <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border-color)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", display: "flex", alignItems: "center", flexWrap: "wrap", gap: "0.3rem" }}>
+                            {totalNovos !== undefined && (
+                              totalNovos > 0 ? (
+                                <button
+                                  onClick={() => setExpandidoId(expandido ? null : entrada.id)}
+                                  style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.72rem" }}
+                                >
+                                  <span className="highlight-nome">{totalNovos} novo(s)!</span>
+                                  {expandido ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                </button>
+                              ) : (
+                                <span>sem novidades</span>
+                              )
+                            )}
+                          </div>
+                          {expandido && novidade && (
+                            <div style={{ marginTop: "0.35rem", fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                              {novidade.novosAtual} novo(s) no Banco Atual · {novidade.novosHistorico} novo(s) no Arquivo Histórico
+                            </div>
+                          )}
+                          <ListaDocumentos
+                            itensAtual={entrada.itensAtual}
+                            itensHistorico={entrada.itensHistorico}
+                            nomePrincipal={entrada.nomePrincipal}
+                          />
                         </div>
-                      )}
-                      <ListaDocumentos
-                        itensAtual={entrada.itensAtual}
-                        itensHistorico={entrada.itensHistorico}
-                        nomePrincipal={entrada.nomePrincipal}
-                      />
+                        <button
+                          onClick={() => handleVerResultados(entrada)}
+                          disabled={bloqueado}
+                          title={bloqueado ? "Aguarde a operação em andamento terminar" : "Ver os documentos desta pessoa, com o nome destacado"}
+                          style={{
+                            background: "none",
+                            border: "1px solid var(--border-color)",
+                            borderRadius: "6px",
+                            padding: "0.3rem 0.5rem",
+                            color: "var(--text-main)",
+                            cursor: bloqueado ? "default" : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.3rem",
+                            fontSize: "0.72rem",
+                            opacity: bloqueado ? 0.5 : 1,
+                          }}
+                        >
+                          {atualizandoId === entrada.id ? <RefreshCw size={13} className="spin" /> : <Eye size={13} />}
+                        </button>
+                        <button
+                          onClick={() => onDefinirMembro(entrada.id, nome, false)}
+                          disabled={bloqueado}
+                          title="Remover desta lista"
+                          style={{ background: "none", border: "1px solid var(--border-color)", borderRadius: "6px", padding: "0.3rem", color: "var(--text-muted)", cursor: bloqueado ? "default" : "pointer", display: "flex" }}
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleVerResultados(entrada)}
-                      disabled={bloqueado}
-                      title={bloqueado ? "Aguarde a operação em andamento terminar" : "Ver os documentos desta pessoa, com o nome destacado"}
-                      style={{
-                        background: "none",
-                        border: "1px solid var(--border-color)",
-                        borderRadius: "6px",
-                        padding: "0.3rem 0.5rem",
-                        color: "var(--text-main)",
-                        cursor: bloqueado ? "default" : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.3rem",
-                        fontSize: "0.72rem",
-                        opacity: bloqueado ? 0.5 : 1,
-                      }}
-                    >
-                      {atualizandoId === entrada.id ? <RefreshCw size={13} className="spin" /> : <Eye size={13} />}
-                    </button>
-                    <button
-                      onClick={() => onDefinirMembro(entrada.id, nome, false)}
-                      disabled={bloqueado}
-                      title="Remover desta lista"
-                      style={{ background: "none", border: "1px solid var(--border-color)", borderRadius: "6px", padding: "0.3rem", color: "var(--text-muted)", cursor: bloqueado ? "default" : "pointer", display: "flex" }}
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
+                  )}
                 </div>
               );
             })

@@ -23,6 +23,11 @@ const SAUDACAO_POR_PERIODO = {
   noite: { texto: "Boa noite", icone: "🌙" },
 };
 
+// Quantos resultados mostrar de cada vez por coluna, antes de precisar
+// clicar em "Carregar mais" - evita a pagina ficar enorme quando alguem
+// tem dezenas de publicacoes.
+const TAMANHO_PAGINA_RESULTADOS = 8;
+
 export function Home() {
   const { resultados, erros, resumo, loadingAtual, loadingHistorico, buscar } = useSearch();
   const historico = useHistoricoBuscas();
@@ -38,7 +43,16 @@ export function Home() {
   const [termosBuscados, setTermosBuscados] = useState([]);
   const [atualizandoHistoricoId, setAtualizandoHistoricoId] = useState(null);
   const [progressoLote, setProgressoLote] = useState(null);
+  const [limiteAtualResultados, setLimiteAtualResultados] = useState(TAMANHO_PAGINA_RESULTADOS);
+  const [limiteHistoricoResultados, setLimiteHistoricoResultados] = useState(TAMANHO_PAGINA_RESULTADOS);
   const resultadosRef = useRef(null);
+
+  // Toda vez que uma busca nova roda (principal, individual ou em lote), volta
+  // a mostrar so a primeira pagina de resultados de cada coluna.
+  const reiniciarPaginacaoResultados = () => {
+    setLimiteAtualResultados(TAMANHO_PAGINA_RESULTADOS);
+    setLimiteHistoricoResultados(TAMANHO_PAGINA_RESULTADOS);
+  };
 
   // Rola a pagina ate a grade de resultados (Banco Atual / Arquivo Historico),
   // usado pelo botao "Ver resultados" do Historico e das Minhas Listas.
@@ -59,6 +73,7 @@ export function Home() {
   const handleSearch = async (termos, dataInicio, dataFim) => {
     const termosNormalizados = termos.map(t => typeof t === 'string' ? t : t.label || t);
     setTermosBuscados(termosNormalizados);
+    reiniciarPaginacaoResultados();
     const resultado = await buscar(termosNormalizados, dataInicio, dataFim);
     if (resultado) {
       historico.salvarBusca({
@@ -85,6 +100,7 @@ export function Home() {
     // verde nos resultados, o link "#:~:text=" que abre o documento direto no nome
     // (Banco Atual) e o aviso "Copiar nome" dos PDFs do Arquivo Historico.
     setTermosBuscados(entrada.termos || []);
+    reiniciarPaginacaoResultados();
     try {
       return await historico.atualizarBusca(entrada, buscar);
     } finally {
@@ -257,9 +273,17 @@ export function Home() {
                <p style={{ color: 'var(--text-muted)' }}>Procurando recentes...</p>
             ) : resAtual.length > 0 ? (
               <div className="results-list">
-                {resAtual.map((item, idx) => (
+                {resAtual.slice(0, limiteAtualResultados).map((item, idx) => (
                   <ResultCard key={item.id || idx} item={item} termosBusca={termosBuscados} />
                 ))}
+                {limiteAtualResultados < resAtual.length && (
+                  <button
+                    onClick={() => setLimiteAtualResultados(l => l + TAMANHO_PAGINA_RESULTADOS)}
+                    style={{ background: "none", border: "1px dashed var(--border-color)", borderRadius: "8px", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.85rem", padding: "0.6rem", textAlign: "center" }}
+                  >
+                    Carregar mais ({resAtual.length - limiteAtualResultados} restantes)
+                  </button>
+                )}
               </div>
             ) : (
                <p style={{ color: 'var(--text-muted)' }}>Nenhuma publicação recente encontrada.</p>
@@ -279,9 +303,17 @@ export function Home() {
                </div>
             ) : resHistorico.length > 0 ? (
               <div className="results-list">
-                {resHistorico.map((item, idx) => (
+                {resHistorico.slice(0, limiteHistoricoResultados).map((item, idx) => (
                   <ResultCard key={item.id || idx} item={item} termosBusca={termosBuscados} />
                 ))}
+                {limiteHistoricoResultados < resHistorico.length && (
+                  <button
+                    onClick={() => setLimiteHistoricoResultados(l => l + TAMANHO_PAGINA_RESULTADOS)}
+                    style={{ background: "none", border: "1px dashed var(--border-color)", borderRadius: "8px", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.85rem", padding: "0.6rem", textAlign: "center" }}
+                  >
+                    Carregar mais ({resHistorico.length - limiteHistoricoResultados} restantes)
+                  </button>
+                )}
               </div>
             ) : (
                <p style={{ color: 'var(--text-muted)' }}>Nenhuma publicação antiga encontrada.</p>

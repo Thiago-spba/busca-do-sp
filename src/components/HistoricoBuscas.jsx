@@ -40,6 +40,18 @@ export function HistoricoBuscas({ historico, onAtualizar, onExcluir, onVerResult
   const [novidades, setNovidades] = useState({}); // { [id]: {novosAtual, novosHistorico} }
   const [expandidoId, setExpandidoId] = useState(null);
   const [confirmandoId, setConfirmandoId] = useState(null);
+  // Cada card comeca colapsado (so nome + contagem); os detalhes e as acoes so
+  // aparecem quando o card e expandido, para a lista nao ficar enorme.
+  const [cardsAbertos, setCardsAbertos] = useState(new Set());
+
+  const alternarCard = (id) => {
+    setCardsAbertos((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(id)) novo.delete(id);
+      else novo.add(id);
+      return novo;
+    });
+  };
 
   const { buscas, carregando, carregandoMais, temMais, carregarMais } = historico;
 
@@ -97,6 +109,7 @@ export function HistoricoBuscas({ historico, onAtualizar, onExcluir, onVerResult
               const totalNovos = novidade ? novidade.novosAtual + novidade.novosHistorico : undefined;
               const expandido = expandidoId === entrada.id;
               const confirmando = confirmandoId === entrada.id;
+              const cardAberto = cardsAbertos.has(entrada.id);
 
               return (
                 <div
@@ -105,15 +118,29 @@ export function HistoricoBuscas({ historico, onAtualizar, onExcluir, onVerResult
                     background: "var(--bg-card)",
                     border: confirmando ? "1px solid #dc2626" : "1px solid var(--border-color)",
                     borderRadius: "10px",
-                    padding: "1rem 1.1rem",
+                    padding: "0.7rem 1.1rem",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+                  <button
+                    onClick={() => alternarCard(entrada.id)}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", width: "100%", background: "none", border: "none", cursor: "pointer", padding: cardAberto ? "0 0 0.6rem" : 0, textAlign: "left" }}
+                  >
+                    <span style={{ fontWeight: "600", color: "var(--text-main)", fontSize: "0.95rem" }}>
+                      {entrada.nomePrincipal}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexShrink: 0 }}>
+                      <span style={{ fontWeight: "600", color: "var(--primary)", fontSize: "0.95rem" }}>
+                        {totalGeral} resultado{totalGeral === 1 ? "" : "s"}
+                      </span>
+                      {cardAberto ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
+                    </span>
+                  </button>
+
+                  {cardAberto && (
+                  <>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", paddingTop: "0.6rem", borderTop: "1px solid var(--border-color)" }}>
                     <div>
-                      <div style={{ fontWeight: "600", color: "var(--text-main)", fontSize: "0.95rem" }}>
-                        {entrada.nomePrincipal}
-                      </div>
-                      <div style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginTop: "0.15rem" }}>
+                      <div style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
                         {formatarData(entrada.fromDate)} – {formatarData(entrada.toDate)}
                         {entrada.filtros?.length > 0 && ` · Filtros: ${entrada.filtros.join(", ")}`}
                         {entrada.listas?.length > 0 && ` · Em: ${entrada.listas.join(", ")}`}
@@ -129,14 +156,6 @@ export function HistoricoBuscas({ historico, onAtualizar, onExcluir, onVerResult
                         itensHistorico={entrada.itensHistorico}
                         nomePrincipal={entrada.nomePrincipal}
                       />
-                    </div>
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontWeight: "600", color: "var(--primary)", fontSize: "1.15rem", lineHeight: 1 }}>
-                        {totalGeral}
-                      </div>
-                      <div style={{ color: "var(--text-muted)", fontSize: "0.7rem", marginTop: "0.2rem" }}>
-                        resultado{totalGeral === 1 ? "" : "s"}
-                      </div>
                     </div>
                   </div>
 
@@ -281,6 +300,8 @@ export function HistoricoBuscas({ historico, onAtualizar, onExcluir, onVerResult
                     <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border-color)", fontSize: "0.72rem", color: "var(--text-muted)" }}>
                       {novidade.novosAtual} novo(s) no Banco Atual · {novidade.novosHistorico} novo(s) no Arquivo Histórico
                     </div>
+                  )}
+                  </>
                   )}
                 </div>
               );
