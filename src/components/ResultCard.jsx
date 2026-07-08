@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { ExternalLink, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, Copy, Check, Lightbulb } from "lucide-react";
 import { formatarDataDocumento, montarLinkOficial } from "../utils/linkOficial";
+import { explicarPublicacaoAPI } from "../services/api";
 
 // Classes de caracteres para casar letras COM ou SEM acento (busca "Jose"
 // destaca "José" e vice-versa)
@@ -108,6 +109,21 @@ function extrairTrechoCentralizado(texto, termos, tamanho = 160) {
 export function ResultCard({ item, termosBusca = [] }) {
   const [expandido, setExpandido] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [explicacao, setExplicacao] = useState(null);
+  const [carregandoExplicacao, setCarregandoExplicacao] = useState(false);
+  const [erroExplicacao, setErroExplicacao] = useState(null);
+
+  const handleExplicar = async () => {
+    setCarregandoExplicacao(true);
+    setErroExplicacao(null);
+    const resultado = await explicarPublicacaoAPI(item);
+    if (resultado.sucesso) {
+      setExplicacao(resultado.texto);
+    } else {
+      setErroExplicacao(resultado.erro || "Não foi possível gerar a explicação.");
+    }
+    setCarregandoExplicacao(false);
+  };
 
   const isHistorico = item.fonte === "historico";
   const dataFormatada = formatarDataDocumento(item);
@@ -141,6 +157,25 @@ export function ResultCard({ item, termosBusca = [] }) {
       <div className="card-excerpt" style={{ whiteSpace: "pre-wrap" }}>
         {expandido ? destacarTexto(trechoCompleto, termosBusca) : destacarTexto(trechoCurto, termosBusca)}
       </div>
+
+      {explicacao ? (
+        <div style={{ background: "var(--chip-blue)", color: "var(--chip-blue-text)", borderRadius: "8px", padding: "0.75rem 0.9rem", fontSize: "0.85rem", lineHeight: "1.5", marginBottom: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+          <Lightbulb size={16} style={{ flexShrink: 0, marginTop: "0.15rem" }} />
+          <span>{explicacao}</span>
+        </div>
+      ) : (
+        <button
+          onClick={handleExplicar}
+          disabled={carregandoExplicacao}
+          style={{ background: "none", border: "none", color: "var(--primary)", cursor: carregandoExplicacao ? "default" : "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.25rem 0", marginBottom: "0.5rem", fontWeight: "500", opacity: carregandoExplicacao ? 0.7 : 1 }}
+        >
+          <Lightbulb size={14} /> {carregandoExplicacao ? "Gerando explicação..." : "Explicar em linguagem simples"}
+        </button>
+      )}
+
+      {erroExplicacao && (
+        <div style={{ color: "var(--chip-red-text)", fontSize: "0.8rem", marginBottom: "0.75rem" }}>{erroExplicacao}</div>
+      )}
 
       {temMaisDetalhes && (
         <button onClick={() => setExpandido(!expandido)} style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0", marginBottom: "0.75rem", fontWeight: "500" }}>

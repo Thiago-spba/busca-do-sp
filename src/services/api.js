@@ -46,3 +46,22 @@ export async function buscarHistoricoAPI(termoPrincipal, fromDate, toDate) {
     return { sucesso: false, fonte: "historico", itens: [], erro: "Não foi possível conectar ao banco Histórico." };
   }
 }
+
+export async function explicarPublicacaoAPI(item) {
+  try {
+    const headers = await cabecalhosAutenticados();
+    const res = await fetch(`${BASE_URL}/explicarPublicacao`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id, titulo: item.titulo, trecho: item.trecho }),
+    });
+    const dados = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { sucesso: false, erro: dados?.erro || "Não foi possível gerar a explicação." };
+    }
+    return dados;
+  } catch (err) {
+    console.error(err);
+    return { sucesso: false, erro: "Não foi possível conectar ao servidor." };
+  }
+}

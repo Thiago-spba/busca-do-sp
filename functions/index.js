@@ -62,3 +62,7 @@ exports.buscaHistorica = onRequest({ region: "southamerica-east1", cors: true },
 // Funcao de controle de acesso (login Google + limite de 5 usuarios)
 const { verificarAcesso } = require("./acesso");
 exports.verificarAcesso = verificarAcesso;
+
+// Explicacao de publicacoes em linguagem simples (IA, sob demanda)
+const { explicarPublicacao } = require("./explicarPublicacao");
+exports.explicarPublicacao = explicarPublicacao;
