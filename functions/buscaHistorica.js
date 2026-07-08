@@ -96,8 +96,10 @@ async function buscarAcervoHistorico(termo, fromDateISO, toDateISO) {
       });
     }
 
-    const itens = Array.from(linksPorHref.entries()).map(([href, dados], i) => ({
-      id: "historico-" + i + "-" + Date.now(),
+    const itens = Array.from(linksPorHref.entries()).map(([href, dados]) => ({
+      // ID estavel (baseado no href do documento), necessario para comparar
+      // buscas antigas com novas e detectar itens ineditos (funcao "Atualizar" do historico)
+      id: "historico-" + href,
       titulo: dados.titulo,
       trecho: dados.trecho,
       slug: href.startsWith("http") ? href : BASE + href,

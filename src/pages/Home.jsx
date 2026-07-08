@@ -1,16 +1,41 @@
 import React, { useState, useEffect } from "react";
 import { SearchBar } from "../components/SearchBar";
 import { ResultCard } from "../components/ResultCard";
+import { HistoricoBuscas } from "../components/HistoricoBuscas";
 import { useSearch } from "../hooks/useSearch";
-import { Database, Archive, AlertCircle, Moon, Sun, Info, Mail } from "lucide-react";
+import { useHistoricoBuscas } from "../hooks/useHistoricoBuscas";
+import { auth } from "../firebase/config";
+import { fraseDoDia } from "../config/frasesMotivacionais";
+import { Database, Archive, AlertCircle, Moon, Sun, Info, Mail, SearchX } from "lucide-react";
+
+// Determina o periodo do dia (manha 5h-11h59, tarde 12h-17h59, noite 18h-4h59),
+// usado tanto para a saudacao quanto para escolher o tom da frase do dia.
+function periodoDoDia(hora) {
+  if (hora >= 5 && hora < 12) return "manha";
+  if (hora >= 12 && hora < 18) return "tarde";
+  return "noite";
+}
+
+const SAUDACAO_POR_PERIODO = {
+  manha: { texto: "Bom dia", icone: "🌅" },
+  tarde: { texto: "Boa tarde", icone: "☀️" },
+  noite: { texto: "Boa noite", icone: "🌙" },
+};
 
 export function Home() {
   const { resultados, erros, resumo, loadingAtual, loadingHistorico, buscar } = useSearch();
-  
+  const historico = useHistoricoBuscas();
+
+  const periodo = periodoDoDia(new Date().getHours());
+  const { texto: saudacaoTexto, icone: saudacaoIcone } = SAUDACAO_POR_PERIODO[periodo];
+  const primeiroNome = (auth.currentUser?.displayName || "").split(" ")[0];
+  const frase = fraseDoDia(periodo);
+
   const [isDark, setIsDark] = useState(() => {
     return localStorage.getItem("busca-dosp-theme") === "dark";
   });
   const [termosBuscados, setTermosBuscados] = useState([]);
+  const [atualizandoHistoricoId, setAtualizandoHistoricoId] = useState(null);
 
   useEffect(() => {
     if (isDark) {
@@ -22,16 +47,45 @@ export function Home() {
     }
   }, [isDark]);
 
-  const handleSearch = (termos, dataInicio, dataFim) => {
-    setTermosBuscados(termos.map(t => typeof t === 'string' ? t : t.label || t));
-    buscar(termos.map(t => typeof t === 'string' ? t : t.label || t), dataInicio, dataFim);
+  const handleSearch = async (termos, dataInicio, dataFim) => {
+    const termosNormalizados = termos.map(t => typeof t === 'string' ? t : t.label || t);
+    setTermosBuscados(termosNormalizados);
+    const resultado = await buscar(termosNormalizados, dataInicio, dataFim);
+    if (resultado) {
+      historico.salvarBusca({
+        termos: termosNormalizados,
+        fromDate: dataInicio,
+        toDate: dataFim,
+        totalAtual: resultado.totalAtual,
+        totalHistorico: resultado.totalHistorico,
+        idsAtual: resultado.idsAtual,
+        idsHistorico: resultado.idsHistorico,
+        diagnostico: resultado.diagnostico,
+      });
+    }
   };
 
+  // So permite UMA busca por vez no app inteiro: o "Atualizar" do historico usa a mesma
+  // funcao `buscar` da barra principal, que cancela qualquer busca anterior em andamento
+  // assim que uma nova comeca. Rodar duas ao mesmo tempo quebraria essa segunda.
+  const handleAtualizarHistorico = async (entrada) => {
+    setAtualizandoHistoricoId(entrada.id);
+    try {
+      return await historico.atualizarBusca(entrada, buscar);
+    } finally {
+      setAtualizandoHistoricoId(null);
+    }
+  };
+  const handleExcluirHistorico = (entrada) => historico.moverParaLixeira(entrada.id);
+  const handleRestaurarHistorico = (entrada) => historico.restaurarDaLixeira(entrada.id);
+
   const isBuscando = loadingAtual || loadingHistorico;
+  const operacaoEmAndamento = isBuscando || atualizandoHistoricoId !== null;
   const resAtual = resultados.filter(i => i.fonte === 'atual');
   const resHistorico = resultados.filter(i => i.fonte === 'historico');
   const totalResultados = resultados.length;
   const temFiltros = termosBuscados.length > 1;
+  const buscaConcluidaSemResultados = !isBuscando && totalResultados === 0 && resumo !== null;
 
   return (
     <div className="container">
@@ -53,7 +107,34 @@ export function Home() {
         <p>Diário Oficial do Estado de São Paulo — Servidor da Educação</p>
       </div>
 
-      <SearchBar onSearch={handleSearch} loading={isBuscando} />
+      <div
+        style={{
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-color)",
+          borderRadius: "10px",
+          padding: "1rem 1.25rem",
+          textAlign: "center",
+          marginBottom: "1.5rem",
+        }}
+      >
+        <div style={{ fontWeight: "600", color: "var(--text-main)", marginBottom: "0.35rem" }}>
+          {saudacaoIcone} {saudacaoTexto}{primeiroNome ? `, ${primeiroNome}` : ""}!
+        </div>
+        <div style={{ color: "var(--text-muted)", fontStyle: "italic", fontSize: "0.9rem" }}>
+          "{frase}"
+        </div>
+      </div>
+
+      <SearchBar onSearch={handleSearch} loading={operacaoEmAndamento} />
+
+      <HistoricoBuscas
+        historico={historico}
+        onAtualizar={handleAtualizarHistorico}
+        onExcluir={handleExcluirHistorico}
+        onRestaurar={handleRestaurarHistorico}
+        atualizandoId={atualizandoHistoricoId}
+        bloqueado={operacaoEmAndamento}
+      />
 
       {/* Erros */}
       {erros.length > 0 && (
@@ -99,13 +180,13 @@ export function Home() {
         </div>
       )}
 
-      {/* Aviso quando filtro não encontra nada */}
-      {!isBuscando && totalResultados === 0 && resumo && temFiltros && (
-        <div style={{ 
-          textAlign: 'center', 
-          marginTop: '2rem', 
-          padding: '1rem', 
-          background: 'var(--chip-orange)', 
+      {/* Aviso quando filtro não encontra nada (mas existem publicações da pessoa) */}
+      {buscaConcluidaSemResultados && temFiltros && (
+        <div style={{
+          textAlign: 'center',
+          marginTop: '2rem',
+          padding: '1rem',
+          background: 'var(--chip-orange)',
           borderRadius: '8px',
           border: '1px solid var(--border-color)',
           color: 'var(--chip-orange-text)',
@@ -115,6 +196,27 @@ export function Home() {
           <div style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
             Tente buscar sem marcar os assuntos para ver todas as publicações de "{termosBuscados[0]}",
             ou altere o período de busca.
+          </div>
+        </div>
+      )}
+
+      {/* Aviso quando nao ha absolutamente nada no Diario Oficial (nem Atual, nem Historico) */}
+      {buscaConcluidaSemResultados && !temFiltros && (
+        <div style={{
+          textAlign: 'center',
+          marginTop: '2rem',
+          padding: '1.25rem',
+          background: 'var(--bg-card)',
+          borderRadius: '8px',
+          border: '1px solid var(--border-color)',
+          color: 'var(--text-main)',
+        }}>
+          <SearchX size={22} style={{ display: 'block', margin: '0 auto 0.5rem' }} color="var(--text-muted)" />
+          <strong>Nada consta para "{termosBuscados[0]}" no período selecionado.</strong>
+          <div style={{ fontSize: '0.85rem', marginTop: '0.5rem', color: 'var(--text-muted)' }}>
+            Não encontramos publicações nem no Banco Atual (2024+) nem no Arquivo Histórico.
+            Tente ampliar o período de busca ou conferir se o nome foi digitado corretamente
+            (nomes abreviados, como "Maria S. Santos", também são aceitos).
           </div>
         </div>
       )}

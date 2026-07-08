@@ -9,6 +9,11 @@ service cloud.firestore {
       // Nenhuma escrita direta pelo navegador. Apenas a Cloud Function
       // (que usa o Admin SDK e ignora estas regras) pode escrever.
       allow write: if false;
+
+      // Historico de buscas: privado, o usuario le e escreve apenas o proprio
+      match /buscas/{buscaId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
 
     // Bloqueia qualquer outra coisa por padrao

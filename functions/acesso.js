@@ -1,9 +1,6 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { initializeApp } = require("firebase-admin/app");
-const { getFirestore, FieldValue } = require("firebase-admin/firestore");
-
-initializeApp();
-const db = getFirestore();
+const { FieldValue } = require("firebase-admin/firestore");
+const { db } = require("./firebaseAdmin");
 
 const LIMITE_USUARIOS = 5;
 

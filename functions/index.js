@@ -1,8 +1,16 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const { buscarAcervoAtual } = require("./buscaAtual");
 const { buscarAcervoHistorico } = require("./buscaHistorica");
+const { exigirUsuarioAutorizado } = require("./autenticacao");
 
 exports.buscaAtual = onRequest({ region: "southamerica-east1", cors: true }, async (req, res) => {
+  try {
+    await exigirUsuarioAutorizado(req);
+  } catch (erro) {
+    res.status(erro.status || 401).json({ erro: erro.message });
+    return;
+  }
+
   try {
     const { termos, fromDate, toDate, pageNumber, pageSize } = req.query;
 
@@ -28,6 +36,13 @@ exports.buscaAtual = onRequest({ region: "southamerica-east1", cors: true }, asy
 });
 
 exports.buscaHistorica = onRequest({ region: "southamerica-east1", cors: true }, async (req, res) => {
+  try {
+    await exigirUsuarioAutorizado(req);
+  } catch (erro) {
+    res.status(erro.status || 401).json({ erro: erro.message });
+    return;
+  }
+
   try {
     const { termo, fromDate, toDate } = req.query;
 
