@@ -54,6 +54,26 @@ function contemPalavra(tokensTexto, palavraBusca) {
 }
 
 /**
+ * Documentos antigos costumam ser listas densas de servidores no formato
+ * "NOME, RG 12.345.678-9 - NOME SEGUINTE, RG ...". O token "rg" marca o fim
+ * do registro de uma pessoa; usamos isso como limite RIGIDO de proximidade,
+ * para a janela nunca "vazar" e pegar palavras do registro de outra pessoa,
+ * mesmo quando o limite de palavras (janelaTokens) sozinho permitiria.
+ */
+function limiteInferiorRg(tokensTexto, indice) {
+  for (let p = indice - 1; p >= 0; p--) {
+    if (tokensTexto[p] === "rg") return p + 1;
+  }
+  return 0;
+}
+function limiteSuperiorRg(tokensTexto, indice) {
+  for (let p = indice + 1; p < tokensTexto.length; p++) {
+    if (tokensTexto[p] === "rg") return p;
+  }
+  return tokensTexto.length;
+}
+
+/**
  * Verifica se um nome aparece no texto por PROXIMIDADE:
  * encontra cada ocorrencia da primeira palavra significativa (ex: "thiago")
  * e checa, numa janela de palavras ao redor dessa ocorrencia, quantas das
@@ -76,8 +96,8 @@ function nomeAparecePorProximidade(tokensTexto, palavras, minimoPalavras = 2, ja
   for (let i = 0; i < tokensTexto.length; i++) {
     if (!palavrasBatem(primeira, tokensTexto[i])) continue;
 
-    const inicio = Math.max(0, i - janelaTokens);
-    const fim = Math.min(tokensTexto.length, i + janelaTokens + 1);
+    const inicio = Math.max(0, i - janelaTokens, limiteInferiorRg(tokensTexto, i));
+    const fim = Math.min(tokensTexto.length, i + janelaTokens + 1, limiteSuperiorRg(tokensTexto, i));
     const janela = tokensTexto.slice(inicio, fim);
 
     const encontradasNaJanela = outras.filter((p) => contemPalavra(janela, p));
