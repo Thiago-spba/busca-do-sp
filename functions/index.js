@@ -59,9 +59,25 @@ exports.buscaHistorica = onRequest({ region: "southamerica-east1", cors: true },
   }
 });
 
-// Funcao de controle de acesso (login Google + limite de 5 usuarios)
+// Funcao de controle de acesso (login Google + limite configuravel de usuarios)
 const { verificarAcesso } = require("./acesso");
 exports.verificarAcesso = verificarAcesso;
+
+// Painel de administrador (restrito a um unico e-mail, ver admin.js)
+const {
+  listarUsuarios,
+  bloquearUsuario,
+  desbloquearUsuario,
+  listarHistoricoUsuario,
+  obterConfigAcesso,
+  atualizarLimiteUsuarios,
+} = require("./admin");
+exports.listarUsuarios = listarUsuarios;
+exports.bloquearUsuario = bloquearUsuario;
+exports.desbloquearUsuario = desbloquearUsuario;
+exports.listarHistoricoUsuario = listarHistoricoUsuario;
+exports.obterConfigAcesso = obterConfigAcesso;
+exports.atualizarLimiteUsuarios = atualizarLimiteUsuarios;
 
 // Explicacao de publicacoes em linguagem simples (IA, sob demanda)
 const { explicarPublicacao } = require("./explicarPublicacao");

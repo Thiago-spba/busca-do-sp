@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
+import { signOut } from "firebase/auth";
+import { httpsCallable } from "firebase/functions";
 import { SearchBar } from "../components/SearchBar";
 import { ResultCard } from "../components/ResultCard";
 import { HistoricoBuscas } from "../components/HistoricoBuscas";
 import { MinhasListas } from "../components/MinhasListas";
+import { ContaBloqueada } from "../components/ContaBloqueada";
 import { useSearch } from "../hooks/useSearch";
 import { useHistoricoBuscas } from "../hooks/useHistoricoBuscas";
-import { auth } from "../firebase/config";
+import { auth, functions } from "../firebase/config";
 import { fraseDoDia } from "../config/frasesMotivacionais";
-import { Database, Archive, AlertCircle, Moon, Sun, Info, Mail, SearchX } from "lucide-react";
+import { ADMIN_EMAIL } from "../config/admin";
+import { Database, Archive, AlertCircle, Moon, Sun, Info, Mail, SearchX, Shield } from "lucide-react";
 
 // Determina o periodo do dia (manha 5h-11h59, tarde 12h-17h59, noite 18h-4h59),
 // usado tanto para a saudacao quanto para escolher o tom da frase do dia.
@@ -62,6 +66,30 @@ export function Home() {
       localStorage.setItem("busca-dosp-theme", "light");
     }
   }, [isDark]);
+
+  // Confere se a conta foi bloqueada pelo admin durante uma sessao ja aberta
+  // (o login em si ja recusa contas bloqueadas, mas quem ja estava logado
+  // quando o bloqueio aconteceu so descobre nessa checagem).
+  const [statusConta, setStatusConta] = useState("verificando");
+  useEffect(() => {
+    let ativo = true;
+    (async () => {
+      try {
+        const verificarAcesso = httpsCallable(functions, "verificarAcesso");
+        const resultado = await verificarAcesso();
+        if (!ativo) return;
+        if (resultado.data.motivo === "bloqueado") {
+          await signOut(auth);
+          setStatusConta("bloqueado");
+        } else {
+          setStatusConta("ok");
+        }
+      } catch {
+        if (ativo) setStatusConta("ok");
+      }
+    })();
+    return () => { ativo = false; };
+  }, []);
 
   const handleSearch = async (termos, dataInicio, dataFim) => {
     const termosNormalizados = termos.map(t => typeof t === 'string' ? t : t.label || t);
@@ -127,6 +155,15 @@ export function Home() {
   const temFiltros = termosBuscados.length > 1;
   const buscaConcluidaSemResultados = !isBuscando && totalResultados === 0 && resumo !== null;
 
+  if (statusConta === "bloqueado") return <ContaBloqueada />;
+  if (statusConta === "verificando") {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "var(--text-muted)" }}>
+        Verificando acesso...
+      </div>
+    );
+  }
+
   return (
     <div className="container">
       
@@ -135,7 +172,13 @@ export function Home() {
         <div className="school-address">Av. Ragueb Chohfi, 4757 — Jardim Três Marias, São Paulo - SP, 08380-330</div>
       </div>
 
-      <div className="header-top">
+      <div className="header-top" style={{ gap: "0.75rem" }}>
+        {auth.currentUser?.email === ADMIN_EMAIL && (
+          <a href="/admin" className="theme-toggle" style={{ textDecoration: "none" }}>
+            <Shield size={18} />
+            Admin
+          </a>
+        )}
         <button className="theme-toggle" onClick={() => setIsDark(!isDark)}>
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
           {isDark ? "Modo Claro" : "Modo Escuro"}

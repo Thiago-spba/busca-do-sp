@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
 import { auth, functions } from "../firebase/config";
+import { ContaBloqueada } from "../components/ContaBloqueada";
 
 export function Login() {
   const navigate = useNavigate();
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(null);
+  const [bloqueado, setBloqueado] = useState(false);
 
   const handleLoginGoogle = async () => {
     setErro(null);
@@ -24,7 +26,9 @@ export function Login() {
         navigate("/");
       } else {
         await signOut(auth);
-        if (motivo === "limite_atingido") {
+        if (motivo === "bloqueado") {
+          setBloqueado(true);
+        } else if (motivo === "limite_atingido") {
           setErro(
             `O limite de ${limite} usuarios cadastrados ja foi atingido (${totalCadastrados}/${limite}). ` +
             "Entre em contato com o administrador para liberar uma vaga."
@@ -40,6 +44,8 @@ export function Login() {
       setCarregando(false);
     }
   };
+
+  if (bloqueado) return <ContaBloqueada />;
 
   return (
     <div

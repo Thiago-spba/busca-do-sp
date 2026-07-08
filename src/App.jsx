@@ -1,10 +1,12 @@
 import React, { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { RotaProtegida } from "./components/RotaProtegida";
+import { RotaAdmin } from "./components/RotaAdmin";
 import "./index.css";
 
 const Home = lazy(() => import("./pages/Home").then((m) => ({ default: m.Home })));
 const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
+const AdminPage = lazy(() => import("./pages/AdminPage").then((m) => ({ default: m.AdminPage })));
 
 function CarregandoTela() {
   return (
@@ -28,6 +30,14 @@ function App() {
             }
           />
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/admin"
+            element={
+              <RotaAdmin>
+                <AdminPage />
+              </RotaAdmin>
+            }
+          />
         </Routes>
       </Suspense>
     </Router>
