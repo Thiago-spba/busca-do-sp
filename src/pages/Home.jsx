@@ -76,8 +76,7 @@ export function Home() {
       setAtualizandoHistoricoId(null);
     }
   };
-  const handleExcluirHistorico = (entrada) => historico.moverParaLixeira(entrada.id);
-  const handleRestaurarHistorico = (entrada) => historico.restaurarDaLixeira(entrada.id);
+  const handleExcluirHistorico = (entrada) => historico.excluirBusca(entrada.id);
 
   const isBuscando = loadingAtual || loadingHistorico;
   const operacaoEmAndamento = isBuscando || atualizandoHistoricoId !== null;
@@ -131,7 +130,6 @@ export function Home() {
         historico={historico}
         onAtualizar={handleAtualizarHistorico}
         onExcluir={handleExcluirHistorico}
-        onRestaurar={handleRestaurarHistorico}
         atualizandoId={atualizandoHistoricoId}
         bloqueado={operacaoEmAndamento}
       />
