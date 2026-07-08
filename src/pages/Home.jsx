@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { SearchBar } from "../components/SearchBar";
 import { ResultCard } from "../components/ResultCard";
 import { HistoricoBuscas } from "../components/HistoricoBuscas";
@@ -45,19 +45,12 @@ export function Home() {
   const [progressoLote, setProgressoLote] = useState(null);
   const [limiteAtualResultados, setLimiteAtualResultados] = useState(TAMANHO_PAGINA_RESULTADOS);
   const [limiteHistoricoResultados, setLimiteHistoricoResultados] = useState(TAMANHO_PAGINA_RESULTADOS);
-  const resultadosRef = useRef(null);
 
   // Toda vez que uma busca nova roda (principal, individual ou em lote), volta
   // a mostrar so a primeira pagina de resultados de cada coluna.
   const reiniciarPaginacaoResultados = () => {
     setLimiteAtualResultados(TAMANHO_PAGINA_RESULTADOS);
     setLimiteHistoricoResultados(TAMANHO_PAGINA_RESULTADOS);
-  };
-
-  // Rola a pagina ate a grade de resultados (Banco Atual / Arquivo Historico),
-  // usado pelo botao "Ver resultados" do Historico e das Minhas Listas.
-  const rolarParaResultados = () => {
-    resultadosRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   useEffect(() => {
@@ -261,7 +254,7 @@ export function Home() {
 
       {/* Grid de Resultados */}
       {(resultados.length > 0 || isBuscando) && (
-        <div className="results-container" ref={resultadosRef}>
+        <div className="results-container">
           
           <div className="results-column">
             <h2 className="column-title">
@@ -341,7 +334,6 @@ export function Home() {
         onDefinirMembro={historico.definirMembroLista}
         onCriarLista={historico.criarLista}
         onExcluirLista={historico.excluirLista}
-        onVerResultados={rolarParaResultados}
         atualizandoId={atualizandoHistoricoId}
         progressoLote={progressoLote}
         bloqueado={operacaoEmAndamento}
@@ -349,10 +341,7 @@ export function Home() {
 
       <HistoricoBuscas
         historico={historico}
-        onAtualizar={handleAtualizarHistorico}
         onExcluir={handleExcluirHistorico}
-        onVerResultados={rolarParaResultados}
-        atualizandoId={atualizandoHistoricoId}
         bloqueado={operacaoEmAndamento}
       />
 

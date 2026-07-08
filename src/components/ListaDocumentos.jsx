@@ -32,17 +32,17 @@ export function ListaDocumentos({ itensAtual = [], itensHistorico = [], nomePrin
   };
 
   return (
-    <div style={{ marginTop: "0.5rem" }}>
+    <div style={{ marginTop: "0.6rem" }}>
       <button
         onClick={() => setAberto(!aberto)}
-        style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem", padding: 0 }}
+        style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.85rem", padding: 0, fontWeight: 500 }}
       >
-        <FileText size={12} /> Ver documentos ({total})
-        {aberto ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        <FileText size={14} /> Ver documentos ({total})
+        {aberto ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
       </button>
 
       {aberto && (
-        <div style={{ marginTop: "0.4rem", display: "flex", flexDirection: "column", gap: "0.3rem", maxHeight: "220px", overflowY: "auto" }}>
+        <div className="doc-link-list">
           {documentos.map((item) => {
             const link = montarLinkOficial(item, nomePrincipal);
             const isHistorico = item.fonte === "historico";
@@ -52,22 +52,10 @@ export function ListaDocumentos({ itensAtual = [], itensHistorico = [], nomePrin
                 href={link || undefined}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "0.35rem",
-                  fontSize: "0.72rem",
-                  color: "var(--text-main)",
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "6px",
-                  padding: "0.4rem 0.55rem",
-                  textDecoration: "none",
-                  pointerEvents: link ? "auto" : "none",
-                  opacity: link ? 1 : 0.5,
-                }}
+                className="doc-link"
+                style={{ pointerEvents: link ? "auto" : "none", opacity: link ? 1 : 0.5 }}
               >
-                <ExternalLink size={11} style={{ marginTop: "0.15rem", flexShrink: 0 }} />
+                <ExternalLink size={13} style={{ marginTop: "0.15rem", flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>
                   {(item.titulo || "Publicação Oficial").slice(0, 70)}
                   {item.titulo?.length > 70 ? "..." : ""}
@@ -79,13 +67,13 @@ export function ListaDocumentos({ itensAtual = [], itensHistorico = [], nomePrin
           })}
 
           {itensHistorico.length > 0 && (
-            <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.4rem", flexWrap: "wrap" }}>
+            <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
               <span>📄 Documentos do Arquivo Histórico abrem PDF — o destaque não funciona neles, use Ctrl+F com o nome copiado.</span>
               <button
                 onClick={copiarNome}
-                style={{ background: copiado ? "var(--primary)" : "none", color: copiado ? "#fff" : "var(--primary)", border: "1px solid var(--primary)", borderRadius: "6px", padding: "0.2rem 0.5rem", cursor: "pointer", fontSize: "0.7rem", display: "flex", alignItems: "center", gap: "0.25rem", whiteSpace: "nowrap" }}
+                style={{ background: copiado ? "var(--primary)" : "none", color: copiado ? "#fff" : "var(--primary)", border: "1px solid var(--primary)", borderRadius: "6px", padding: "0.3rem 0.6rem", cursor: "pointer", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.3rem", whiteSpace: "nowrap" }}
               >
-                {copiado ? <><Check size={11} /> Copiado!</> : <><Copy size={11} /> Copiar nome</>}
+                {copiado ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar nome</>}
               </button>
             </div>
           )}

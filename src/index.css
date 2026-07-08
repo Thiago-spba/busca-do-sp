@@ -413,6 +413,205 @@ select option {
   color: #052e16;
 }
 
+/* Acompanhamento (Historico de Buscas / Minhas Listas) - mesmo sistema visual
+   dos cards de resultado (sombra leve, hover, espacamento e fontes maiores) */
+.tracking-section {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  margin-top: 2rem;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.tracking-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 1.1rem 1.5rem;
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.tracking-body {
+  padding: 0 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tracking-card {
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
+}
+.tracking-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.tracking-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tracking-name {
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 1rem;
+}
+
+.tracking-count {
+  font-weight: 600;
+  color: var(--primary);
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.tracking-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 0.3rem;
+}
+
+.tracking-status {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.tracking-btn {
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+.tracking-btn:hover {
+  background: var(--primary-hover);
+}
+.tracking-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tracking-btn-ghost {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.3rem 0.2rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.tracking-btn-ghost:hover {
+  color: var(--text-main);
+}
+.tracking-btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.tracking-empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.tracking-loadmore {
+  background: none;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.75rem;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+.tracking-loadmore:hover {
+  background: var(--bg-app);
+}
+.tracking-loadmore:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.doc-link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: 0.6rem;
+}
+
+.doc-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+.doc-link:hover {
+  border-color: var(--primary);
+}
+
+/* Responsivo: telas pequenas ganham mais respiro vertical e menos padding lateral */
+@media (max-width: 640px) {
+  .container {
+    padding: 1.25rem 1rem;
+  }
+  .header h1 {
+    font-size: 1.7rem;
+  }
+  .header p {
+    font-size: 0.95rem;
+  }
+  .tracking-toggle {
+    padding: 1rem;
+    font-size: 0.95rem;
+  }
+  .tracking-body {
+    padding: 0 1rem 1rem;
+  }
+  .tracking-card-row {
+    align-items: flex-start;
+  }
+}
+
 /* Rodapé */
 .app-footer {
   text-align: center;
